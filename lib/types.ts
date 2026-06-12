@@ -34,6 +34,15 @@ export interface Property {
   property_images?: PropertyImage[]
 }
 
+export interface Profile {
+  id: number
+  name: string
+  phone: string | null
+  bio: string | null
+  avatar_url: string | null
+  updated_at: string
+}
+
 export interface PropertyFilters {
   q?: string
   city?: CityKey | ''

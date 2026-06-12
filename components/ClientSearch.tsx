@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { lang } from '@/lib/lang'
 import { CITY_OPTIONS, CITY_LABELS, DISTRICTS, CityKey } from '@/lib/locations'
-import { Search, X, SlidersHorizontal } from 'lucide-react'
+import { Search, X, SlidersHorizontal, Loader2 } from 'lucide-react'
 
 export default function ClientSearch({
   initialQ,
@@ -32,6 +32,8 @@ export default function ClientSearch({
 
   const activeFilterCount = [city, district, type, days].filter(v => v && v !== 'all').length
 
+  const [isPending, startTransition] = useTransition()
+
   const search = useCallback(() => {
     const params = new URLSearchParams()
     if (q.trim()) params.set('q', q.trim())
@@ -39,13 +41,13 @@ export default function ClientSearch({
     if (district) params.set('district', district)
     if (type && type !== 'all') params.set('type', type)
     if (days && days !== 'all') params.set('days', days)
-    router.push(`/?${params.toString()}`)
+    startTransition(() => router.push(`/?${params.toString()}`))
     setShowFilters(false)
   }, [q, city, district, type, days, router])
 
   const clear = () => {
     setQ(''); setCity(''); setDistrict(''); setType(''); setDays('')
-    router.push('/')
+    startTransition(() => router.push('/'))
     setShowFilters(false)
   }
 
@@ -130,9 +132,10 @@ export default function ClientSearch({
           <Button
             size="icon"
             onClick={search}
+            disabled={isPending}
             className="md:hidden h-8 w-8 shrink-0 bg-orange-500 hover:bg-orange-600 text-white shadow-lg"
           >
-            <Search size={14} />
+            {isPending ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
           </Button>
         )}
         {/* Mobile: filter toggle */}
@@ -150,8 +153,8 @@ export default function ClientSearch({
           )}
         </Button>
         {/* Desktop: search button */}
-        <Button onClick={search} className="hidden md:flex h-9 shrink-0 bg-orange-500 hover:bg-orange-600 text-white shadow-lg">
-          <Search size={15} className="mr-1.5" />
+        <Button onClick={search} disabled={isPending} className="hidden md:flex h-9 shrink-0 bg-orange-500 hover:bg-orange-600 text-white shadow-lg">
+          {isPending ? <Loader2 size={15} className="mr-1.5 animate-spin" /> : <Search size={15} className="mr-1.5" />}
           {lang.search.filterBtn}
         </Button>
         {activeFilterCount > 0 && (
@@ -179,8 +182,8 @@ export default function ClientSearch({
             <div className="flex flex-col gap-0.5">{label(lang.search.dateLabel)}{daysSelect}</div>
           </div>
           <div className="flex gap-2">
-            <Button onClick={search} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white h-8">
-              <Search size={14} className="mr-1.5" />
+            <Button onClick={search} disabled={isPending} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white h-8">
+              {isPending ? <Loader2 size={14} className="mr-1.5 animate-spin" /> : <Search size={14} className="mr-1.5" />}
               {lang.search.filterBtn}
             </Button>
             {activeFilterCount > 0 && (

@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState, useTransition } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Property, PROPERTY_TYPE_LABELS, PROPERTY_STATUS_LABELS, PropertyType, CityKey } from '@/lib/types'
@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/u
 import { lang } from '@/lib/lang'
 import ThemeToggle from '@/components/ThemeToggle'
 import { cn } from '@/lib/utils'
-import { Pencil, Trash2, Search, ExternalLink, SlidersHorizontal, X } from 'lucide-react'
+import { Pencil, Trash2, Search, ExternalLink, SlidersHorizontal, X, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 const STATUS_COLORS = {
@@ -47,6 +47,8 @@ export default function AdminPropertyTable({
     setDistrict('')
   }
 
+  const [isPending, startTransition] = useTransition()
+
   const applyFilters = useCallback(() => {
     const params = new URLSearchParams()
     if (q) params.set('q', q)
@@ -54,13 +56,13 @@ export default function AdminPropertyTable({
     if (district) params.set('district', district)
     if (type && type !== 'all') params.set('type', type)
     if (days && days !== 'all') params.set('days', days)
-    router.push(`${pathname}?${params.toString()}`)
+    startTransition(() => router.push(`${pathname}?${params.toString()}`))
     setShowFilters(false)
   }, [q, city, district, type, days, router, pathname])
 
   const clearFilters = useCallback(() => {
     setQ(''); setCity(''); setDistrict(''); setType(''); setDays('')
-    router.push(pathname)
+    startTransition(() => router.push(pathname))
     setShowFilters(false)
   }, [router, pathname])
 
@@ -105,9 +107,10 @@ export default function AdminPropertyTable({
             <Button
               size="icon"
               onClick={applyFilters}
+              disabled={isPending}
               className="md:hidden h-8 w-8 shrink-0 bg-orange-500 hover:bg-orange-600 text-white"
             >
-              <Search size={14} />
+              {isPending ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
             </Button>
           )}
           {/* Mobile: filter toggle */}
@@ -125,8 +128,8 @@ export default function AdminPropertyTable({
             )}
           </Button>
           {/* Desktop: search button */}
-          <Button onClick={applyFilters} className="hidden md:flex h-9 shrink-0 bg-orange-500 hover:bg-orange-600">
-            <Search size={15} className="mr-1.5" />
+          <Button onClick={applyFilters} disabled={isPending} className="hidden md:flex h-9 shrink-0 bg-orange-500 hover:bg-orange-600">
+            {isPending ? <Loader2 size={15} className="mr-1.5 animate-spin" /> : <Search size={15} className="mr-1.5" />}
             {lang.search.filterBtn}
           </Button>
           {activeFilterCount > 0 && (
@@ -267,8 +270,8 @@ export default function AdminPropertyTable({
               </div>
             </div>
             <div className="flex gap-2">
-              <Button onClick={applyFilters} className="flex-1 bg-orange-500 hover:bg-orange-600 h-9">
-                <Search size={15} className="mr-1.5" />
+              <Button onClick={applyFilters} disabled={isPending} className="flex-1 bg-orange-500 hover:bg-orange-600 h-9">
+                {isPending ? <Loader2 size={15} className="mr-1.5 animate-spin" /> : <Search size={15} className="mr-1.5" />}
                 {lang.search.filterBtn}
               </Button>
               {activeFilterCount > 0 && (

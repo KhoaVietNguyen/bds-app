@@ -6,6 +6,7 @@ import { lang } from '@/lib/lang'
 import { formatPrice, formatDate } from '@/lib/format'
 import { formatLocation } from '@/lib/locations'
 import ImageGallery from '@/components/ImageGallery'
+import AgentCard from '@/components/AgentCard'
 import ShareButton from '@/components/ShareButton'
 import DownloadButton from '@/components/DownloadButton'
 import ThemeToggle from '@/components/ThemeToggle'
@@ -41,11 +42,10 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
 
   if (!property) notFound()
 
-  const { data: images } = await supabase
-    .from('property_images')
-    .select('*')
-    .eq('property_id', id)
-    .order('order_index')
+  const [{ data: images }, { data: profile }] = await Promise.all([
+    supabase.from('property_images').select('*').eq('property_id', id).order('order_index'),
+    supabase.from('profile').select('*').eq('id', 1).single(),
+  ])
 
   const sortedImages = images ?? []
   const shareDescription = `${PROPERTY_TYPE_LABELS[property.type as keyof typeof PROPERTY_TYPE_LABELS]} tại ${formatLocation(property.district, property.city as CityKey)} - ${formatPrice(property.price)}`
@@ -129,6 +129,9 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
             </div>
           )}
         </div>
+
+        {/* Sale contact */}
+        <AgentCard profile={profile} />
       </main>
 
       {/* FAB actions */}

@@ -4,9 +4,13 @@ import AdminSidebar from '@/components/admin/AdminSidebar'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  // proxy.ts đã verify user qua getUser() trên mọi request /admin —
+  // ở đây chỉ đọc session từ cookie (không gọi mạng) để lấy email hiển thị
+  const { data: { session } } = await supabase.auth.getSession()
 
-  if (!user) redirect('/login')
+  if (!session) redirect('/login')
+
+  const user = session.user
 
   return (
     <div className="min-h-screen flex relative isolate bg-orange-200 dark:bg-zinc-950">
