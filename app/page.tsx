@@ -2,12 +2,13 @@ import { createClient } from '@/lib/supabase/server'
 import PropertyCard from '@/components/PropertyCard'
 import ClientSearch from '@/components/ClientSearch'
 import ThemeToggle from '@/components/ThemeToggle'
+import { lang } from '@/lib/lang'
 import { Building2 } from 'lucide-react'
 
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; area?: string; type?: string }>
+  searchParams: Promise<{ q?: string; city?: string; district?: string; type?: string; days?: string }>
 }) {
   const params = await searchParams
   const supabase = await createClient()
@@ -20,16 +21,23 @@ export default async function HomePage({
   if (params.q) {
     query = query.or(`id.ilike.%${params.q}%,name.ilike.%${params.q}%`)
   }
-  if (params.area) {
-    query = query.ilike('area', `%${params.area}%`)
+  if (params.city) {
+    query = query.eq('city', params.city)
+  }
+  if (params.district) {
+    query = query.eq('district', params.district)
   }
   if (params.type) {
     query = query.eq('type', params.type)
   }
+  if (params.days) {
+    const since = new Date(Date.now() - parseInt(params.days) * 86_400_000).toISOString()
+    query = query.gte('created_at', since)
+  }
 
   const { data: properties } = await query
 
-  const hasFilters = params.q || params.area || params.type
+  const hasFilters = params.q || params.city || params.district || params.type || params.days
 
   return (
     <div className="min-h-screen bg-background">
@@ -39,17 +47,31 @@ export default async function HomePage({
           <div className="bg-orange-500 text-white p-1.5 rounded-lg">
             <Building2 size={20} />
           </div>
-          <span className="font-bold text-foreground text-lg flex-1">BĐS Việt</span>
+          <span className="font-bold text-foreground text-lg flex-1">{lang.app.name}</span>
           <ThemeToggle />
         </div>
       </header>
 
       {/* Hero search */}
-      <div className="bg-gradient-to-br from-orange-500 to-orange-700 text-white px-4 py-10">
-        <div className="max-w-2xl mx-auto text-center space-y-4">
-          <h1 className="text-2xl md:text-3xl font-bold">Tìm bất động sản lý tưởng</h1>
-          <p className="text-orange-100 text-sm">Villa · Biệt thự · Căn hộ dịch vụ</p>
-          <ClientSearch initialQ={params.q} initialArea={params.area} initialType={params.type} />
+      <div
+        className="relative text-white px-4 py-16"
+        style={{
+          backgroundImage: "url('https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=1920&q=80')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        <div className="absolute inset-0 bg-black/60" />
+        <div className="relative z-10 max-w-2xl mx-auto text-center space-y-4">
+          <h1 className="text-2xl md:text-3xl font-bold">{lang.home.heroTitle}</h1>
+          <p className="text-white/70 text-sm">{lang.home.heroSubtitle}</p>
+          <ClientSearch
+            initialQ={params.q}
+            initialCity={params.city}
+            initialDistrict={params.district}
+            initialType={params.type}
+            initialDays={params.days}
+          />
         </div>
       </div>
 
@@ -57,8 +79,8 @@ export default async function HomePage({
       <main className="max-w-6xl mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-4">
           <p className="text-sm text-muted-foreground">
-            {hasFilters ? 'Kết quả tìm kiếm: ' : 'Tất cả BĐS: '}
-            <span className="font-semibold text-foreground">{properties?.length ?? 0} căn</span>
+            {hasFilters ? lang.home.resultsFiltered : lang.home.resultsAll}{' '}
+            <span className="font-semibold text-foreground">{properties?.length ?? 0} {lang.home.countUnit}</span>
           </p>
         </div>
 
@@ -71,8 +93,8 @@ export default async function HomePage({
         ) : (
           <div className="py-20 text-center text-muted-foreground">
             <Building2 size={48} className="mx-auto mb-3 opacity-30" />
-            <p className="text-lg font-medium">Không tìm thấy BĐS phù hợp</p>
-            <p className="text-sm mt-1">Thử thay đổi bộ lọc</p>
+            <p className="text-lg font-medium">{lang.home.noResults}</p>
+            <p className="text-sm mt-1">{lang.home.noResultsHint}</p>
           </div>
         )}
       </main>

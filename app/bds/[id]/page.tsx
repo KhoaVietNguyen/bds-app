@@ -1,8 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { PROPERTY_TYPE_LABELS, PROPERTY_STATUS_LABELS } from '@/lib/types'
-import { formatPrice } from '@/lib/format'
+import { PROPERTY_TYPE_LABELS, PROPERTY_STATUS_LABELS, CityKey } from '@/lib/types'
+import { lang } from '@/lib/lang'
+import { formatPrice, formatDate } from '@/lib/format'
+import { formatLocation } from '@/lib/locations'
 import ImageGallery from '@/components/ImageGallery'
 import ShareButton from '@/components/ShareButton'
 import DownloadButton from '@/components/DownloadButton'
@@ -13,11 +15,11 @@ import type { Metadata } from 'next'
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params
   const supabase = await createClient()
-  const { data } = await supabase.from('properties').select('name, area, type').eq('id', id).single()
-  if (!data) return { title: 'Không tìm thấy BĐS' }
+  const { data } = await supabase.from('properties').select('name, city, district, type').eq('id', id).single()
+  if (!data) return { title: lang.property.notFound }
   return {
-    title: `${data.name} | BĐS Việt`,
-    description: `${PROPERTY_TYPE_LABELS[data.type as keyof typeof PROPERTY_TYPE_LABELS]} tại ${data.area}`,
+    title: `${data.name} | ${lang.app.name}`,
+    description: `${PROPERTY_TYPE_LABELS[data.type as keyof typeof PROPERTY_TYPE_LABELS]} tại ${formatLocation(data.district, data.city as CityKey)}`,
   }
 }
 
@@ -46,7 +48,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
     .order('order_index')
 
   const sortedImages = images ?? []
-  const shareDescription = `${PROPERTY_TYPE_LABELS[property.type as keyof typeof PROPERTY_TYPE_LABELS]} tại ${property.area} - ${formatPrice(property.price)}`
+  const shareDescription = `${PROPERTY_TYPE_LABELS[property.type as keyof typeof PROPERTY_TYPE_LABELS]} tại ${formatLocation(property.district, property.city as CityKey)} - ${formatPrice(property.price)}`
 
   return (
     <div className="min-h-screen bg-background">
@@ -59,7 +61,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
           <div className="bg-orange-500 text-white p-1.5 rounded-lg">
             <Building2 size={18} />
           </div>
-          <span className="font-bold text-foreground flex-1">BĐS Việt</span>
+          <span className="font-bold text-foreground flex-1"></span>
           <ThemeToggle />
         </div>
       </header>
@@ -90,7 +92,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
 
           <div className="flex items-center gap-2 text-muted-foreground text-sm">
             <MapPin size={15} className="shrink-0" />
-            <span>{property.area}</span>
+            <span>{formatLocation(property.district, property.city as CityKey, property.address)}</span>
           </div>
 
           {(property.bedrooms || property.area_sqm) && (
@@ -98,7 +100,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
               {property.bedrooms && (
                 <span className="flex items-center gap-1.5">
                   <BedDouble size={16} />
-                  {property.bedrooms} phòng ngủ
+                  {property.bedrooms} {lang.property.bedroomFull}
                 </span>
               )}
               {property.area_sqm && (
@@ -110,13 +112,16 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
             </div>
           )}
 
-          <div className="pt-2 border-t border-border">
+          <div className="pt-2 border-t border-border flex items-end justify-between gap-3">
             <p className="text-2xl font-bold text-primary">{formatPrice(property.price)}</p>
+            <p className="text-xs text-muted-foreground shrink-0">
+              {lang.property.postedDate}: {formatDate(property.created_at)}
+            </p>
           </div>
 
           {property.description && (
             <div className="pt-2 border-t border-border">
-              <p className="text-sm font-medium text-foreground mb-1.5">Mô tả</p>
+              <p className="text-sm font-medium text-foreground mb-1.5">{lang.property.descriptionTitle}</p>
               <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">{property.description}</p>
             </div>
           )}

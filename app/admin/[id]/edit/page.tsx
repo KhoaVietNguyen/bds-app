@@ -25,14 +25,14 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
   return (
     <div className="max-w-2xl mx-auto space-y-4">
       <div className="flex items-center gap-2">
-        <Link href="/admin" className="text-slate-500 hover:text-slate-700 flex items-center gap-1 text-sm">
+        <Link href="/admin" className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-sm">
           <ChevronLeft size={16} />
           Quay lại
         </Link>
       </div>
       <div>
-        <h1 className="text-2xl font-bold text-slate-800">Chỉnh sửa BĐS</h1>
-        <p className="text-sm text-slate-500 font-mono mt-1">{property.id}</p>
+        <h1 className="text-2xl font-bold text-foreground">Chỉnh sửa BĐS</h1>
+        <p className="text-sm text-muted-foreground font-mono mt-1">{property.id}</p>
       </div>
       <PropertyForm property={property} existingImages={images ?? []} />
     </div>

@@ -7,11 +7,12 @@ import { createClient } from '@/lib/supabase/client'
 import { Building2, LayoutDashboard, Plus, LogOut, Menu, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { lang } from '@/lib/lang'
 import ThemeToggle from '@/components/ThemeToggle'
 
 const navItems = [
-  { href: '/admin', label: 'Danh sách BĐS', icon: LayoutDashboard },
-  { href: '/admin/new', label: 'Thêm BĐS mới', icon: Plus },
+  { href: '/admin', label: lang.admin.navList, icon: LayoutDashboard },
+  { href: '/admin/new', label: lang.admin.navAdd, icon: Plus },
 ]
 
 export default function AdminSidebar({ userEmail }: { userEmail: string }) {
@@ -32,7 +33,7 @@ export default function AdminSidebar({ userEmail }: { userEmail: string }) {
         <div className="bg-orange-500 text-white p-1.5 rounded-lg">
           <Building2 size={20} />
         </div>
-        <span className="font-semibold text-foreground flex-1">BĐS Manager</span>
+        <span className="font-semibold text-foreground flex-1">{lang.admin.brand}</span>
         <ThemeToggle />
       </div>
 
@@ -64,7 +65,7 @@ export default function AdminSidebar({ userEmail }: { userEmail: string }) {
           className="w-full justify-start text-muted-foreground hover:text-red-500 hover:bg-red-500/10"
         >
           <LogOut size={16} className="mr-2" />
-          Đăng xuất
+          {lang.admin.logout}
         </Button>
       </div>
     </div>

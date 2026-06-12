@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { lang } from '@/lib/lang'
 import { Download, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -14,9 +15,9 @@ export default function DownloadButton({ images, propertyId }: Props) {
   const [loading, setLoading] = useState(false)
 
   async function handleDownload() {
-    if (images.length === 0) return toast.error('Không có ảnh để tải')
+    if (images.length === 0) return toast.error(lang.download.errorEmpty)
     setLoading(true)
-    toast.info(`Đang chuẩn bị ${images.length} ảnh...`)
+    toast.info(lang.download.preparing(images.length))
 
     try {
       const JSZip = (await import('jszip')).default
@@ -36,18 +37,18 @@ export default function DownloadButton({ images, propertyId }: Props) {
 
       const content = await zip.generateAsync({ type: 'blob' })
       saveAs(content, `${propertyId}_images.zip`)
-      toast.success('Tải xuống thành công!')
+      toast.success(lang.download.success)
     } catch {
-      toast.error('Tải thất bại, vui lòng thử lại')
+      toast.error(lang.download.errorFail)
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <Button onClick={handleDownload} disabled={loading} className="flex-1 gap-2 bg-blue-600 hover:bg-blue-700">
+    <Button onClick={handleDownload} disabled={loading} className="flex-1 gap-2">
       {loading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-      {loading ? 'Đang tải...' : `Tải ảnh (${images.length})`}
+      {loading ? lang.download.loading : lang.download.btn(images.length)}
     </Button>
   )
 }

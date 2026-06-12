@@ -4,12 +4,14 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useCallback, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Property, PROPERTY_TYPE_LABELS, PROPERTY_STATUS_LABELS, PropertyType } from '@/lib/types'
+import { Property, PROPERTY_TYPE_LABELS, PROPERTY_STATUS_LABELS, PropertyType, CityKey } from '@/lib/types'
 import { formatPrice } from '@/lib/format'
+import { formatLocation, CITY_OPTIONS, DISTRICTS } from '@/lib/locations'
 import { createClient } from '@/lib/supabase/client'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { lang } from '@/lib/lang'
 import { Pencil, Trash2, Search, ExternalLink } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -24,32 +26,42 @@ export default function AdminPropertyTable({
   filters,
 }: {
   properties: Property[]
-  filters: { q?: string; area?: string; type?: string }
+  filters: { q?: string; city?: string; district?: string; type?: string; days?: string }
 }) {
   const router = useRouter()
   const pathname = usePathname()
   const [q, setQ] = useState(filters.q ?? '')
-  const [area, setArea] = useState(filters.area ?? '')
+  const [city, setCity] = useState(filters.city ?? '')
+  const [district, setDistrict] = useState(filters.district ?? '')
   const [type, setType] = useState(filters.type ?? '')
+  const [days, setDays] = useState(filters.days ?? '')
   const [deleting, setDeleting] = useState<string | null>(null)
+
+  function handleCityChange(val: string | null) {
+    const newCity = !val || val === 'all' ? '' : val
+    setCity(newCity)
+    setDistrict('')
+  }
 
   const applyFilters = useCallback(() => {
     const params = new URLSearchParams()
     if (q) params.set('q', q)
-    if (area) params.set('area', area)
+    if (city) params.set('city', city)
+    if (district) params.set('district', district)
     if (type && type !== 'all') params.set('type', type)
+    if (days && days !== 'all') params.set('days', days)
     router.push(`${pathname}?${params.toString()}`)
-  }, [q, area, type, router, pathname])
+  }, [q, city, district, type, days, router, pathname])
 
   async function handleDelete(id: string) {
-    if (!confirm(`Xóa BĐS ${id}? Hành động này không thể hoàn tác.`)) return
+    if (!confirm(lang.admin.table.deleteConfirm(id))) return
     setDeleting(id)
     const supabase = createClient()
     const { error } = await supabase.from('properties').delete().eq('id', id)
     if (error) {
-      toast.error('Xóa thất bại: ' + error.message)
+      toast.error(lang.admin.table.deleteError + ' ' + error.message)
     } else {
-      toast.success(`Đã xóa ${id}`)
+      toast.success(lang.admin.table.deleteSuccess(id))
       router.refresh()
     }
     setDeleting(null)
@@ -64,33 +76,60 @@ export default function AdminPropertyTable({
       <div className="bg-card rounded-xl border border-border p-4 space-y-3">
         <div className="flex flex-col sm:flex-row gap-3">
           <Input
-            placeholder="Tìm theo ID hoặc tên..."
+            placeholder={lang.search.queryPlaceholder}
             value={q}
             onChange={(e) => setQ(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
             className="flex-1"
           />
-          <Input
-            placeholder="Khu vực..."
-            value={area}
-            onChange={(e) => setArea(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
-            className="flex-1"
-          />
-          <Select value={type || 'all'} onValueChange={(v) => setType(v === 'all' ? '' : v as string)}>
-            <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder="Loại BĐS" />
+          <Select value={city || 'all'} onValueChange={handleCityChange}>
+            <SelectTrigger className="w-full sm:w-44">
+              <SelectValue placeholder={lang.search.cityLabel} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tất cả loại</SelectItem>
-              <SelectItem value="villa">Villa</SelectItem>
-              <SelectItem value="biet_thu">Biệt thự</SelectItem>
-              <SelectItem value="can_ho_dich_vu">Căn hộ dịch vụ</SelectItem>
+              <SelectItem value="all">{lang.search.cityAll}</SelectItem>
+              {CITY_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={district || 'all'} onValueChange={(v) => setDistrict(v === 'all' ? '' : (v ?? ''))} disabled={!city}>
+            <SelectTrigger className="w-full sm:w-40">
+              <SelectValue placeholder={lang.search.districtLabel} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{lang.search.districtAll}</SelectItem>
+              {city && DISTRICTS[city as CityKey]?.map((d) => (
+                <SelectItem key={d} value={d}>{d}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={type || 'all'} onValueChange={(v) => setType(v === 'all' ? '' : v as string)}>
+            <SelectTrigger className="w-full sm:w-48">
+              <SelectValue placeholder={lang.search.typeLabel} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{lang.search.typeAllLong}</SelectItem>
+              <SelectItem value="villa">{lang.propertyTypes.villa}</SelectItem>
+              <SelectItem value="biet_thu">{lang.propertyTypes.biet_thu}</SelectItem>
+              <SelectItem value="can_ho_dich_vu">{lang.propertyTypes.can_ho_dich_vu}</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={days || 'all'} onValueChange={(v) => setDays(v === 'all' ? '' : (v ?? ''))}>
+            <SelectTrigger className="w-full sm:w-36">
+              <SelectValue placeholder={lang.search.dateLabel} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{lang.search.dateAll}</SelectItem>
+              <SelectItem value="7">{lang.search.date7}</SelectItem>
+              <SelectItem value="30">{lang.search.date30}</SelectItem>
+              <SelectItem value="90">{lang.search.date90}</SelectItem>
+              <SelectItem value="180">{lang.search.date180}</SelectItem>
             </SelectContent>
           </Select>
           <Button onClick={applyFilters} className="shrink-0">
             <Search size={16} className="mr-1.5" />
-            Lọc
+            {lang.search.filterBtn}
           </Button>
         </div>
       </div>
@@ -98,7 +137,7 @@ export default function AdminPropertyTable({
       {/* Table / Cards */}
       {properties.length === 0 ? (
         <div className="bg-card rounded-xl border border-border p-12 text-center text-muted-foreground">
-          Không có BĐS nào. <Link href="/admin/new" className="text-primary underline">Thêm mới</Link>
+          {lang.admin.table.empty} <Link href="/admin/new" className="text-primary underline">{lang.admin.addBtn}</Link>
         </div>
       ) : (
         <div className="bg-card rounded-xl border border-border overflow-hidden">
@@ -107,14 +146,14 @@ export default function AdminPropertyTable({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-muted/50 text-muted-foreground text-xs uppercase tracking-wide">
-                  <th className="px-4 py-3 text-left">Ảnh</th>
-                  <th className="px-4 py-3 text-left">ID</th>
-                  <th className="px-4 py-3 text-left">Tên BĐS</th>
-                  <th className="px-4 py-3 text-left">Loại</th>
-                  <th className="px-4 py-3 text-left">Khu vực</th>
-                  <th className="px-4 py-3 text-left">Giá</th>
-                  <th className="px-4 py-3 text-left">Trạng thái</th>
-                  <th className="px-4 py-3 text-right">Thao tác</th>
+                  <th className="px-4 py-3 text-left">{lang.admin.table.colImage}</th>
+                  <th className="px-4 py-3 text-left">{lang.admin.table.colId}</th>
+                  <th className="px-4 py-3 text-left">{lang.admin.table.colName}</th>
+                  <th className="px-4 py-3 text-left">{lang.admin.table.colType}</th>
+                  <th className="px-4 py-3 text-left">{lang.admin.table.colArea}</th>
+                  <th className="px-4 py-3 text-left">{lang.admin.table.colPrice}</th>
+                  <th className="px-4 py-3 text-left">{lang.admin.table.colStatus}</th>
+                  <th className="px-4 py-3 text-right">{lang.admin.table.colActions}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -125,14 +164,14 @@ export default function AdminPropertyTable({
                         {coverImage(p) ? (
                           <Image src={coverImage(p)!} alt={p.name} width={56} height={40} className="object-cover w-full h-full" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">No img</div>
+                          <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">{lang.property.noImage}</div>
                         )}
                       </div>
                     </td>
                     <td className="px-4 py-3 font-mono text-primary font-medium">{p.id}</td>
                     <td className="px-4 py-3 font-medium text-foreground max-w-[200px] truncate">{p.name}</td>
                     <td className="px-4 py-3 text-muted-foreground">{PROPERTY_TYPE_LABELS[p.type]}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{p.area}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{formatLocation(p.district, p.city)}</td>
                     <td className="px-4 py-3 text-foreground font-medium">{formatPrice(p.price)}</td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[p.status]}`}>
@@ -176,13 +215,13 @@ export default function AdminPropertyTable({
                   {coverImage(p) ? (
                     <Image src={coverImage(p)!} alt={p.name} width={80} height={64} className="object-cover w-full h-full" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">No img</div>
+                    <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">{lang.property.noImage}</div>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-mono text-xs text-primary font-medium">{p.id}</p>
                   <p className="font-medium text-foreground truncate">{p.name}</p>
-                  <p className="text-xs text-muted-foreground">{PROPERTY_TYPE_LABELS[p.type]} · {p.area}</p>
+                  <p className="text-xs text-muted-foreground">{PROPERTY_TYPE_LABELS[p.type]} · {formatLocation(p.district, p.city)}</p>
                   <p className="text-sm font-semibold text-foreground mt-0.5">{formatPrice(p.price)}</p>
                 </div>
                 <div className="flex flex-col gap-1 shrink-0">

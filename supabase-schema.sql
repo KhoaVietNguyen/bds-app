@@ -1,14 +1,22 @@
 -- Chạy file này trong Supabase SQL Editor
+-- Lưu ý: script này DROP và recreate toàn bộ bảng
+
+-- Xoá bảng cũ (nếu có) để áp dụng schema mới
+DROP TABLE IF EXISTS property_images CASCADE;
+DROP TABLE IF EXISTS properties CASCADE;
+DROP SEQUENCE IF EXISTS property_seq CASCADE;
 
 -- Sequence cho ID đẹp
-CREATE SEQUENCE IF NOT EXISTS property_seq START 1;
+CREATE SEQUENCE property_seq START 1;
 
 -- Bảng bất động sản
 CREATE TABLE IF NOT EXISTS properties (
   id          TEXT PRIMARY KEY DEFAULT 'BDS-' || LPAD(nextval('property_seq')::text, 5, '0'),
   name        TEXT NOT NULL,
   type        TEXT NOT NULL CHECK (type IN ('villa', 'biet_thu', 'can_ho_dich_vu')),
-  area        TEXT NOT NULL,
+  city        TEXT NOT NULL CHECK (city IN ('ha_noi', 'ho_chi_minh')),
+  district    TEXT NOT NULL,
+  address     TEXT,
   price       BIGINT,
   area_sqm    INTEGER,
   bedrooms    INTEGER,
@@ -29,9 +37,10 @@ CREATE TABLE IF NOT EXISTS property_images (
 );
 
 -- Index tìm kiếm nhanh
-CREATE INDEX IF NOT EXISTS idx_properties_type   ON properties(type);
-CREATE INDEX IF NOT EXISTS idx_properties_area   ON properties(area);
-CREATE INDEX IF NOT EXISTS idx_properties_status ON properties(status);
+CREATE INDEX IF NOT EXISTS idx_properties_type     ON properties(type);
+CREATE INDEX IF NOT EXISTS idx_properties_city     ON properties(city);
+CREATE INDEX IF NOT EXISTS idx_properties_district ON properties(district);
+CREATE INDEX IF NOT EXISTS idx_properties_status   ON properties(status);
 CREATE INDEX IF NOT EXISTS idx_images_property   ON property_images(property_id);
 
 -- Row Level Security (public read, auth write)

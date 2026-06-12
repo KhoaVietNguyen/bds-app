@@ -5,11 +5,13 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import imageCompression from 'browser-image-compression'
 import { createClient } from '@/lib/supabase/client'
-import { Property, PropertyImage, PropertyType, PropertyStatus } from '@/lib/types'
+import { Property, PropertyImage, PropertyType, PropertyStatus, CityKey } from '@/lib/types'
+import { CITY_OPTIONS, DISTRICTS } from '@/lib/locations'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { lang } from '@/lib/lang'
 import { Loader2, Upload, X } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -33,7 +35,9 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
 
   const [name, setName] = useState(property?.name ?? '')
   const [type, setType] = useState<PropertyType>(property?.type ?? 'villa')
-  const [area, setArea] = useState(property?.area ?? '')
+  const [city, setCity] = useState<CityKey>(property?.city ?? 'ho_chi_minh')
+  const [district, setDistrict] = useState(property?.district ?? '')
+  const [address, setAddress] = useState(property?.address ?? '')
   const [price, setPrice] = useState(property?.price?.toString() ?? '')
   const [areaSqm, setAreaSqm] = useState(property?.area_sqm?.toString() ?? '')
   const [bedrooms, setBedrooms] = useState(property?.bedrooms?.toString() ?? '')
@@ -60,7 +64,7 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
       )
       setNewFiles((prev) => [...prev, ...compressed])
     } catch {
-      toast.error('Nén ảnh thất bại, thử lại')
+      toast.error(lang.form.errorCompress)
     } finally {
       setCompressing(false)
     }
@@ -78,7 +82,7 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!name || !area) return toast.error('Vui lòng điền đầy đủ thông tin bắt buộc')
+    if (!name || !district) return toast.error(lang.form.errorRequired)
 
     setSaving(true)
     const supabase = createClient()
@@ -88,7 +92,9 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
       const propertyData = {
         name,
         type,
-        area,
+        city,
+        district,
+        address: address || null,
         price: price ? parseInt(price) : null,
         area_sqm: areaSqm ? parseInt(areaSqm) : null,
         bedrooms: bedrooms ? parseInt(bedrooms) : null,
@@ -147,7 +153,7 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
             formData.append('folder', `bds-app/${propertyId}`)
 
             const res = await fetch('/api/upload', { method: 'POST', body: formData })
-            if (!res.ok) throw new Error('Upload thất bại')
+            if (!res.ok) throw new Error(lang.form.errorUpload)
             const { url, publicId } = await res.json()
 
             await supabase.from('property_images').insert({
@@ -164,11 +170,11 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
         setUploading(false)
       }
 
-      toast.success(property?.id ? 'Đã cập nhật BĐS' : 'Đã thêm BĐS mới')
+      toast.success(property?.id ? lang.form.successUpdate : lang.form.successCreate)
       router.push('/admin')
       router.refresh()
     } catch (err: any) {
-      toast.error('Lỗi: ' + (err.message ?? 'Không xác định'))
+      toast.error(lang.form.errorPrefix + ' ' + (err.message ?? 'Không xác định'))
       setSaving(false)
       setUploading(false)
     }
@@ -177,65 +183,93 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="bg-card rounded-xl border border-border p-5 space-y-4">
-        <h2 className="font-semibold text-foreground">Thông tin cơ bản</h2>
+        <h2 className="font-semibold text-foreground">{lang.form.sectionBasic}</h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="sm:col-span-2 space-y-1.5">
-            <Label>Tên BĐS <span className="text-red-500">*</span></Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="VD: Villa Hồ Tây 3 phòng ngủ" required />
+            <Label>{lang.form.nameLabel} <span className="text-red-500">*</span></Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={lang.form.namePlaceholder} required />
           </div>
 
           <div className="space-y-1.5">
-            <Label>Loại BĐS</Label>
+            <Label>{lang.form.typeLabel}</Label>
             <Select value={type} onValueChange={(v) => setType(v as PropertyType)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="villa">Villa</SelectItem>
-                <SelectItem value="biet_thu">Biệt thự</SelectItem>
-                <SelectItem value="can_ho_dich_vu">Căn hộ dịch vụ</SelectItem>
+                <SelectItem value="villa">{lang.propertyTypes.villa}</SelectItem>
+                <SelectItem value="biet_thu">{lang.propertyTypes.biet_thu}</SelectItem>
+                <SelectItem value="can_ho_dich_vu">{lang.propertyTypes.can_ho_dich_vu}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-1.5">
-            <Label>Khu vực <span className="text-red-500">*</span></Label>
-            <Input value={area} onChange={(e) => setArea(e.target.value)} placeholder="VD: Tây Hồ, Hà Nội" required />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>Giá (VNĐ)</Label>
-            <Input type="number" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="VD: 5000000000" />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>Diện tích (m²)</Label>
-            <Input type="number" value={areaSqm} onChange={(e) => setAreaSqm(e.target.value)} placeholder="VD: 200" />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>Số phòng ngủ</Label>
-            <Input type="number" value={bedrooms} onChange={(e) => setBedrooms(e.target.value)} placeholder="VD: 3" />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>Trạng thái</Label>
-            <Select value={status} onValueChange={(v) => setStatus(v as PropertyStatus)}>
+            <Label>{lang.form.cityLabel} <span className="text-red-500">*</span></Label>
+            <Select value={city} onValueChange={(v) => {
+              const newCity = v as CityKey
+              setCity(newCity)
+              if (!DISTRICTS[newCity].includes(district)) setDistrict('')
+            }}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="active">Đang bán/cho thuê</SelectItem>
-                <SelectItem value="sold">Đã bán</SelectItem>
-                <SelectItem value="rented">Đã cho thuê</SelectItem>
+                {CITY_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>{lang.form.districtLabel} <span className="text-red-500">*</span></Label>
+            <Select value={district} onValueChange={(v) => setDistrict(v ?? '')} disabled={!city}>
+              <SelectTrigger><SelectValue placeholder={lang.form.districtLabel} /></SelectTrigger>
+              <SelectContent>
+                {DISTRICTS[city]?.map((d) => (
+                  <SelectItem key={d} value={d}>{d}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
 
           <div className="sm:col-span-2 space-y-1.5">
-            <Label>Mô tả</Label>
+            <Label>{lang.form.addressLabel}</Label>
+            <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder={lang.form.addressPlaceholder} />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>{lang.form.priceLabel}</Label>
+            <Input type="number" value={price} onChange={(e) => setPrice(e.target.value)} placeholder={lang.form.pricePlaceholder} />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>{lang.form.areaSqmLabel}</Label>
+            <Input type="number" value={areaSqm} onChange={(e) => setAreaSqm(e.target.value)} placeholder={lang.form.areaSqmPlaceholder} />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>{lang.form.bedroomsLabel}</Label>
+            <Input type="number" value={bedrooms} onChange={(e) => setBedrooms(e.target.value)} placeholder={lang.form.bedroomsPlaceholder} />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>{lang.form.statusLabel}</Label>
+            <Select value={status} onValueChange={(v) => setStatus(v as PropertyStatus)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">{lang.propertyStatuses.active}</SelectItem>
+                <SelectItem value="sold">{lang.propertyStatuses.sold}</SelectItem>
+                <SelectItem value="rented">{lang.propertyStatuses.rented}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="sm:col-span-2 space-y-1.5">
+            <Label>{lang.form.descLabel}</Label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={4}
-              placeholder="Mô tả chi tiết về bất động sản..."
+              placeholder={lang.form.descPlaceholder}
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
             />
           </div>
@@ -246,11 +280,11 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
       <div className="bg-card rounded-xl border border-border p-5 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold text-foreground">
-            Ảnh BĐS <span className="text-muted-foreground font-normal text-sm">({keepImages.length + newFiles.length} ảnh)</span>
+            {lang.form.sectionImages} <span className="text-muted-foreground font-normal text-sm">({lang.form.imageCount(keepImages.length + newFiles.length)})</span>
           </h2>
           <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={compressing}>
             {compressing ? <Loader2 size={14} className="mr-1.5 animate-spin" /> : <Upload size={14} className="mr-1.5" />}
-            {compressing ? 'Đang nén...' : 'Thêm ảnh'}
+            {compressing ? lang.form.compressingBtn : lang.form.addImageBtn}
           </Button>
         </div>
         <input ref={fileInputRef} type="file" multiple accept="image/*" onChange={handleFileChange} className="hidden" />
@@ -279,7 +313,7 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
                 >
                   <X size={12} />
                 </button>
-                <span className="absolute bottom-1 left-1 bg-primary text-white text-xs px-1 rounded">Mới</span>
+                <span className="absolute bottom-1 left-1 bg-primary text-white text-xs px-1 rounded">{lang.form.newBadge}</span>
               </div>
             ))}
           </div>
@@ -292,15 +326,15 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
             className="w-full border-2 border-dashed border-slate-200 rounded-xl p-8 text-center text-muted-foreground hover:border-primary hover:text-primary transition-colors"
           >
             <Upload size={24} className="mx-auto mb-2" />
-            <p className="text-sm">Nhấp để chọn ảnh</p>
-            <p className="text-xs mt-1">Hỗ trợ nhiều ảnh cùng lúc</p>
+            <p className="text-sm">{lang.form.uploadClickHint}</p>
+            <p className="text-xs mt-1">{lang.form.uploadMultiHint}</p>
           </button>
         )}
 
         {uploading && (
           <div className="space-y-1">
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>Đang tải lên...</span>
+              <span>{lang.form.uploadingMsg}</span>
               <span>{uploadProgress}%</span>
             </div>
             <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -315,11 +349,11 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
 
       <div className="flex gap-3">
         <Button type="button" variant="outline" onClick={() => router.back()} className="flex-1 sm:flex-none">
-          Hủy
+          {lang.form.cancelBtn}
         </Button>
         <Button type="submit" disabled={saving} className="flex-1 sm:flex-none bg-primary hover:bg-primary/90">
           {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {property ? 'Lưu thay đổi' : 'Thêm BĐS'}
+          {property ? lang.form.saveBtn : lang.form.createBtn}
         </Button>
       </div>
     </form>

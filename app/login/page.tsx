@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { lang } from '@/lib/lang'
 import { Building2, Loader2 } from 'lucide-react'
 
 export default function LoginPage() {
@@ -25,7 +26,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
-      setError('Email hoặc mật khẩu không đúng')
+      setError(lang.login.errorInvalid)
       setLoading(false)
     } else {
       router.push('/admin')
@@ -42,13 +43,13 @@ export default function LoginPage() {
               <Building2 size={28} />
             </div>
           </div>
-          <CardTitle className="text-xl">Quản trị BĐS</CardTitle>
-          <p className="text-sm text-muted-foreground">Đăng nhập để tiếp tục</p>
+          <CardTitle className="text-xl">{lang.login.title}</CardTitle>
+          <p className="text-sm text-muted-foreground">{lang.login.subtitle}</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{lang.login.emailLabel}</Label>
               <Input
                 id="email"
                 type="email"
@@ -59,7 +60,7 @@ export default function LoginPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="password">Mật khẩu</Label>
+              <Label htmlFor="password">{lang.login.passwordLabel}</Label>
               <Input
                 id="password"
                 type="password"
@@ -74,7 +75,7 @@ export default function LoginPage() {
             )}
             <Button type="submit" className="w-full" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Đăng nhập
+              {lang.login.submitBtn}
             </Button>
           </form>
         </CardContent>

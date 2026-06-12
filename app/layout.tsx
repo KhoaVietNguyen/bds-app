@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
+import { lang } from "@/lib/lang";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: "BĐS Việt",
-  description: "Tìm kiếm và chia sẻ bất động sản",
+  title: lang.app.name,
+  description: lang.app.description,
 };
 
 export const viewport = {

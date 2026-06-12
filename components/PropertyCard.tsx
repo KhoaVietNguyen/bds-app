@@ -1,7 +1,9 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { Property, PROPERTY_TYPE_LABELS, PROPERTY_STATUS_LABELS } from '@/lib/types'
+import { lang } from '@/lib/lang'
 import { formatPrice } from '@/lib/format'
+import { formatLocation } from '@/lib/locations'
 import { MapPin, BedDouble, Maximize2, Images } from 'lucide-react'
 
 const STATUS_COLORS = {
@@ -60,14 +62,14 @@ export default function PropertyCard({ property }: { property: Property }) {
 
           <div className="flex items-center gap-1 text-muted-foreground text-xs mt-2">
             <MapPin size={12} />
-            <span className="truncate">{property.area}</span>
+            <span className="truncate">{formatLocation(property.district, property.city)}</span>
           </div>
 
           <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
             {property.bedrooms && (
               <span className="flex items-center gap-1">
                 <BedDouble size={12} />
-                {property.bedrooms} PN
+                {property.bedrooms} {lang.property.bedroomShort}
               </span>
             )}
             {property.area_sqm && (

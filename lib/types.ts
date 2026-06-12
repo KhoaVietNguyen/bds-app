@@ -1,17 +1,12 @@
+import { lang } from './lang'
+import type { CityKey } from './locations'
+
+export type { CityKey }
 export type PropertyType = 'villa' | 'biet_thu' | 'can_ho_dich_vu'
 export type PropertyStatus = 'active' | 'sold' | 'rented'
 
-export const PROPERTY_TYPE_LABELS: Record<PropertyType, string> = {
-  villa: 'Villa',
-  biet_thu: 'Biệt thự',
-  can_ho_dich_vu: 'Căn hộ dịch vụ',
-}
-
-export const PROPERTY_STATUS_LABELS: Record<PropertyStatus, string> = {
-  active: 'Đang bán/cho thuê',
-  sold: 'Đã bán',
-  rented: 'Đã cho thuê',
-}
+export const PROPERTY_TYPE_LABELS: Record<PropertyType, string> = lang.propertyTypes as Record<PropertyType, string>
+export const PROPERTY_STATUS_LABELS: Record<PropertyStatus, string> = lang.propertyStatuses as Record<PropertyStatus, string>
 
 export interface PropertyImage {
   id: string
@@ -26,7 +21,9 @@ export interface Property {
   id: string
   name: string
   type: PropertyType
-  area: string
+  city: CityKey
+  district: string
+  address: string | null
   price: number | null
   area_sqm: number | null
   bedrooms: number | null
@@ -39,6 +36,7 @@ export interface Property {
 
 export interface PropertyFilters {
   q?: string
-  area?: string
+  city?: CityKey | ''
+  district?: string
   type?: PropertyType | ''
 }
