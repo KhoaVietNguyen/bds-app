@@ -53,18 +53,10 @@ export default async function HomePage({
       </header>
 
       {/* Hero search */}
-      <div
-        className="relative text-white px-4 py-16"
-        style={{
-          backgroundImage: "url('https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=1920&q=80')",
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
-      >
-        <div className="absolute inset-0 bg-black/60" />
+      <div className="relative px-4 py-16 bg-linear-to-br from-orange-200 via-orange-50 to-amber-200 dark:from-zinc-950 dark:via-orange-950/60 dark:to-black">
         <div className="relative z-10 max-w-2xl mx-auto text-center space-y-4">
-          <h1 className="text-2xl md:text-3xl font-bold">{lang.home.heroTitle}</h1>
-          <p className="text-white/70 text-sm">{lang.home.heroSubtitle}</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">{lang.home.heroTitle}</h1>
+          <p className="text-muted-foreground text-sm">{lang.home.heroSubtitle}</p>
           <ClientSearch
             initialQ={params.q}
             initialCity={params.city}

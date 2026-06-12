@@ -5,21 +5,78 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import imageCompression from 'browser-image-compression'
 import { createClient } from '@/lib/supabase/client'
-import { Property, PropertyImage, PropertyType, PropertyStatus, CityKey } from '@/lib/types'
-import { CITY_OPTIONS, DISTRICTS } from '@/lib/locations'
+import { Property, PropertyImage, PropertyType, PropertyStatus, CityKey, PROPERTY_TYPE_LABELS, PROPERTY_STATUS_LABELS } from '@/lib/types'
+import { CITY_OPTIONS, CITY_LABELS, DISTRICTS } from '@/lib/locations'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { lang } from '@/lib/lang'
-import { Loader2, Upload, X } from 'lucide-react'
+import { Loader2, Upload, X, GripVertical } from 'lucide-react'
 import { toast } from 'sonner'
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 const COMPRESSION_OPTIONS = {
   maxSizeMB: 0.5,        // 500 KB
   maxWidthOrHeight: 1920,
   useWebWorker: true,
   fileType: 'image/webp',
+}
+
+type ImgItem =
+  | { kind: 'existing'; id: string; url: string }
+  | { kind: 'new'; id: string; file: File; preview: string }
+
+function SortableImage({ item, index, onRemove }: { item: ImgItem; index: number; onRemove: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id })
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      {...attributes}
+      {...listeners}
+      className={`relative aspect-square rounded-lg overflow-hidden bg-muted touch-none cursor-grab active:cursor-grabbing ${
+        isDragging ? 'opacity-60 ring-2 ring-primary z-10' : ''
+      } ${item.kind === 'new' ? 'border-2 border-primary' : ''}`}
+    >
+      <Image
+        src={item.kind === 'existing' ? item.url : item.preview}
+        alt=""
+        fill
+        className="object-cover pointer-events-none select-none"
+        sizes="120px"
+        draggable={false}
+      />
+      <span className="absolute top-1 left-1 bg-black/60 text-white text-xs font-medium px-1.5 h-5 rounded-full flex items-center justify-center">
+        {index === 0 ? 'Bìa' : index + 1}
+      </span>
+      <button
+        type="button"
+        onClick={onRemove}
+        onPointerDown={(e) => e.stopPropagation()}
+        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1"
+      >
+        <X size={12} />
+      </button>
+      {item.kind === 'new' && (
+        <span className="absolute bottom-1 left-1 bg-primary text-white text-xs px-1 rounded">{lang.form.newBadge}</span>
+      )}
+      <span className="absolute bottom-1 right-1 text-white/80 bg-black/40 rounded p-0.5">
+        <GripVertical size={12} />
+      </span>
+    </div>
+  )
 }
 
 interface Props {
@@ -44,10 +101,26 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
   const [description, setDescription] = useState(property?.description ?? '')
   const [status, setStatus] = useState<PropertyStatus>(property?.status ?? 'active')
 
-  const [keepImages, setKeepImages] = useState<PropertyImage[]>(existingImages)
-  const [newFiles, setNewFiles] = useState<{ file: File; preview: string }[]>([])
+  const [items, setItems] = useState<ImgItem[]>(
+    existingImages.map((img) => ({ kind: 'existing' as const, id: img.id, url: img.url }))
+  )
   const [uploadProgress, setUploadProgress] = useState(0)
   const [compressing, setCompressing] = useState(false)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } })
+  )
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    setItems((prev) => {
+      const oldIndex = prev.findIndex((i) => i.id === active.id)
+      const newIndex = prev.findIndex((i) => i.id === over.id)
+      return arrayMove(prev, oldIndex, newIndex)
+    })
+  }
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? [])
@@ -56,13 +129,18 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
 
     setCompressing(true)
     try {
-      const compressed = await Promise.all(
+      const compressed: ImgItem[] = await Promise.all(
         files.map(async (file) => {
           const compressedFile = await imageCompression(file, COMPRESSION_OPTIONS)
-          return { file: compressedFile, preview: URL.createObjectURL(compressedFile) }
+          return {
+            kind: 'new' as const,
+            id: crypto.randomUUID(),
+            file: compressedFile,
+            preview: URL.createObjectURL(compressedFile),
+          }
         })
       )
-      setNewFiles((prev) => [...prev, ...compressed])
+      setItems((prev) => [...prev, ...compressed])
     } catch {
       toast.error(lang.form.errorCompress)
     } finally {
@@ -70,13 +148,11 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
     }
   }
 
-  const removeExisting = (id: string) =>
-    setKeepImages((prev) => prev.filter((img) => img.id !== id))
-
-  const removeNew = (index: number) => {
-    setNewFiles((prev) => {
-      URL.revokeObjectURL(prev[index].preview)
-      return prev.filter((_, i) => i !== index)
+  const removeItem = (id: string) => {
+    setItems((prev) => {
+      const item = prev.find((i) => i.id === id)
+      if (item?.kind === 'new') URL.revokeObjectURL(item.preview)
+      return prev.filter((i) => i.id !== id)
     })
   }
 
@@ -122,9 +198,8 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
       }
 
       // 2. Delete removed existing images from Cloudinary + DB
-      const removedImages = existingImages.filter(
-        (img) => !keepImages.find((k) => k.id === img.id)
-      )
+      const keptIds = new Set(items.filter((i) => i.kind === 'existing').map((i) => i.id))
+      const removedImages = existingImages.filter((img) => !keptIds.has(img.id))
       if (removedImages.length > 0) {
         await Promise.all(
           removedImages.map((img) =>
@@ -141,15 +216,18 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
           .in('id', removedImages.map((img) => img.id))
       }
 
-      // 3. Upload new images to Cloudinary
-      if (newFiles.length > 0) {
-        setUploading(true)
-        let done = 0
+      // 3. Walk items in display order: update order_index of existing, upload new at their slot
+      const newCount = items.filter((i) => i.kind === 'new').length
+      if (newCount > 0) setUploading(true)
+      let done = 0
 
-        await Promise.all(
-          newFiles.map(async ({ file }, i) => {
+      await Promise.all(
+        items.map(async (item, i) => {
+          if (item.kind === 'existing') {
+            await supabase.from('property_images').update({ order_index: i }).eq('id', item.id)
+          } else {
             const formData = new FormData()
-            formData.append('file', file)
+            formData.append('file', item.file)
             formData.append('folder', `bds-app/${propertyId}`)
 
             const res = await fetch('/api/upload', { method: 'POST', body: formData })
@@ -160,15 +238,15 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
               property_id: propertyId,
               url,
               storage_path: publicId,
-              order_index: keepImages.length + i,
+              order_index: i,
             })
 
             done++
-            setUploadProgress(Math.round((done / newFiles.length) * 100))
-          })
-        )
-        setUploading(false)
-      }
+            setUploadProgress(Math.round((done / newCount) * 100))
+          }
+        })
+      )
+      setUploading(false)
 
       toast.success(property?.id ? lang.form.successUpdate : lang.form.successCreate)
       router.push('/admin')
@@ -182,7 +260,7 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="bg-card rounded-xl border border-border p-5 space-y-4">
+      <div className="bg-card/60 backdrop-blur rounded-xl border border-border p-5 space-y-4">
         <h2 className="font-semibold text-foreground">{lang.form.sectionBasic}</h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -194,7 +272,7 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
           <div className="space-y-1.5">
             <Label>{lang.form.typeLabel}</Label>
             <Select value={type} onValueChange={(v) => setType(v as PropertyType)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-full">{PROPERTY_TYPE_LABELS[type]}</SelectTrigger>
               <SelectContent>
                 <SelectItem value="villa">{lang.propertyTypes.villa}</SelectItem>
                 <SelectItem value="biet_thu">{lang.propertyTypes.biet_thu}</SelectItem>
@@ -210,7 +288,7 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
               setCity(newCity)
               if (!DISTRICTS[newCity].includes(district)) setDistrict('')
             }}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-full">{CITY_LABELS[city]}</SelectTrigger>
               <SelectContent>
                 {CITY_OPTIONS.map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
@@ -222,7 +300,9 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
           <div className="space-y-1.5">
             <Label>{lang.form.districtLabel} <span className="text-red-500">*</span></Label>
             <Select value={district} onValueChange={(v) => setDistrict(v ?? '')} disabled={!city}>
-              <SelectTrigger><SelectValue placeholder={lang.form.districtLabel} /></SelectTrigger>
+              <SelectTrigger className="w-full">
+                {district || <span className="text-muted-foreground">{lang.form.districtLabel}</span>}
+              </SelectTrigger>
               <SelectContent>
                 {DISTRICTS[city]?.map((d) => (
                   <SelectItem key={d} value={d}>{d}</SelectItem>
@@ -254,7 +334,7 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
           <div className="space-y-1.5">
             <Label>{lang.form.statusLabel}</Label>
             <Select value={status} onValueChange={(v) => setStatus(v as PropertyStatus)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-full">{PROPERTY_STATUS_LABELS[status]}</SelectTrigger>
               <SelectContent>
                 <SelectItem value="active">{lang.propertyStatuses.active}</SelectItem>
                 <SelectItem value="sold">{lang.propertyStatuses.sold}</SelectItem>
@@ -277,10 +357,10 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
       </div>
 
       {/* Images */}
-      <div className="bg-card rounded-xl border border-border p-5 space-y-4">
+      <div className="bg-card/60 backdrop-blur rounded-xl border border-border p-5 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold text-foreground">
-            {lang.form.sectionImages} <span className="text-muted-foreground font-normal text-sm">({lang.form.imageCount(keepImages.length + newFiles.length)})</span>
+            {lang.form.sectionImages} <span className="text-muted-foreground font-normal text-sm">({lang.form.imageCount(items.length)})</span>
           </h2>
           <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={compressing}>
             {compressing ? <Loader2 size={14} className="mr-1.5 animate-spin" /> : <Upload size={14} className="mr-1.5" />}
@@ -289,37 +369,24 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
         </div>
         <input ref={fileInputRef} type="file" multiple accept="image/*" onChange={handleFileChange} className="hidden" />
 
-        {(keepImages.length > 0 || newFiles.length > 0) && (
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
-            {keepImages.map((img) => (
-              <div key={img.id} className="relative aspect-square rounded-lg overflow-hidden bg-muted group">
-                <Image src={img.url} alt="" fill className="object-cover" sizes="120px" />
-                <button
-                  type="button"
-                  onClick={() => removeExisting(img.id)}
-                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <X size={12} />
-                </button>
-              </div>
-            ))}
-            {newFiles.map(({ preview }, i) => (
-              <div key={i} className="relative aspect-square rounded-lg overflow-hidden bg-muted group border-2 border-primary">
-                <Image src={preview} alt="" fill className="object-cover" sizes="120px" />
-                <button
-                  type="button"
-                  onClick={() => removeNew(i)}
-                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <X size={12} />
-                </button>
-                <span className="absolute bottom-1 left-1 bg-primary text-white text-xs px-1 rounded">{lang.form.newBadge}</span>
-              </div>
-            ))}
-          </div>
+        {items.length > 0 && (
+          <>
+            <p className="text-xs text-muted-foreground">
+              Kéo thả để sắp xếp — ảnh đầu tiên là ảnh bìa
+            </p>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={items.map((i) => i.id)} strategy={rectSortingStrategy}>
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+                  {items.map((item, i) => (
+                    <SortableImage key={item.id} item={item} index={i} onRemove={() => removeItem(item.id)} />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
+          </>
         )}
 
-        {keepImages.length === 0 && newFiles.length === 0 && (
+        {items.length === 0 && (
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}

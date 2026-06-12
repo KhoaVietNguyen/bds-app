@@ -26,6 +26,31 @@ export default function DownloadButton({ images, propertyId }: Props) {
       const zip = new JSZip()
       const folder = zip.folder(propertyId)!
 
+      // Chụp info card thành ảnh PNG kèm vào zip (fail thì bỏ qua, vẫn tải ảnh BĐS)
+      // Luôn chụp ở light mode cho dễ đọc — tạm tắt dark trong lúc chụp rồi trả lại
+      const htmlEl = document.documentElement
+      const wasDark = htmlEl.classList.contains('dark')
+      try {
+        const { toPng } = await import('html-to-image')
+        const node = document.getElementById('property-info-card')
+        if (node) {
+          if (wasDark) {
+            htmlEl.classList.remove('dark')
+            await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+          }
+          const dataUrl = await toPng(node, {
+            pixelRatio: 2,
+            backgroundColor: '#ffffff',
+          })
+          const infoBlob = await (await fetch(dataUrl)).blob()
+          folder.file(`${propertyId}_000_thong-tin.png`, infoBlob)
+        }
+      } catch {
+        // bỏ qua nếu chụp thất bại
+      } finally {
+        if (wasDark) htmlEl.classList.add('dark')
+      }
+
       await Promise.all(
         images.map(async (img, i) => {
           const res = await fetch(img.url)

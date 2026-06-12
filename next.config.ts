@@ -1,6 +1,16 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  devIndicators: false,
+  allowedDevOrigins: ['*.ngrok-free.dev', '*.ngrok-free.app', '*.ngrok.io'],
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [{ key: 'ngrok-skip-browser-warning', value: '1' }],
+      },
+    ]
+  },
   images: {
     remotePatterns: [
       {

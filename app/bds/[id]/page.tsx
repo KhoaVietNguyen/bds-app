@@ -71,22 +71,32 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
         <ImageGallery images={sortedImages as any} />
 
         {/* Info card */}
-        <div className="bg-card rounded-2xl p-5 space-y-4 shadow-sm border border-border">
+        <div id="property-info-card" className="bg-card rounded-2xl p-5 space-y-4 shadow-sm border border-border">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1">
               <div className="flex items-center gap-2 flex-wrap mb-2">
-                <span className="font-mono text-xs bg-primary/10 text-primary px-2 py-0.5 rounded font-medium flex items-center gap-1">
+                 <p className="text-xs font-bold text-muted-foreground shrink-0">
+                  {lang.property.postedDate}: {formatDate(property.created_at)}
+                </p>
+              </div>
+              
+              <div className="flex items-center gap-2 flex-wrap mb-2">
+                 <span className="text-xs bg-orange-500/80 text-white font-bold px-2 py-1 rounded">
+                  {PROPERTY_TYPE_LABELS[property.type as keyof typeof PROPERTY_TYPE_LABELS]}
+                </span>
+                <span className={`text-xs font-bold px-2 py-1 rounded ${STATUS_COLORS[property.status as keyof typeof STATUS_COLORS]}`}>
+                  {PROPERTY_STATUS_LABELS[property.status as keyof typeof PROPERTY_STATUS_LABELS]}
+                </span>
+                <span className="font-mono text-xs bg-primary/10 text-primary px-2 py-1 rounded font-bold flex items-center gap-1">
                   <Hash size={11} />
                   {property.id}
                 </span>
-                <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded">
-                  {PROPERTY_TYPE_LABELS[property.type as keyof typeof PROPERTY_TYPE_LABELS]}
-                </span>
-                <span className={`text-xs px-2 py-0.5 rounded font-medium ${STATUS_COLORS[property.status as keyof typeof STATUS_COLORS]}`}>
-                  {PROPERTY_STATUS_LABELS[property.status as keyof typeof PROPERTY_STATUS_LABELS]}
-                </span>
+
               </div>
-              <h1 className="text-xl font-bold text-foreground leading-snug">{property.name}</h1>
+              <div className="border-t border-b py-2 flex items-end justify-between gap-3">
+                <p className="text-2xl font-bold text-primary">{formatPrice(property.price)}</p>
+              </div>
+              <h1 className="text-xl pt-2 font-bold text-foreground leading-snug">{property.name}</h1>
             </div>
           </div>
 
@@ -111,13 +121,6 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
               )}
             </div>
           )}
-
-          <div className="pt-2 border-t border-border flex items-end justify-between gap-3">
-            <p className="text-2xl font-bold text-primary">{formatPrice(property.price)}</p>
-            <p className="text-xs text-muted-foreground shrink-0">
-              {lang.property.postedDate}: {formatDate(property.created_at)}
-            </p>
-          </div>
 
           {property.description && (
             <div className="pt-2 border-t border-border">

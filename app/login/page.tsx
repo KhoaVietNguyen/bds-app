@@ -26,11 +26,10 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
-      setError(lang.login.errorInvalid)
+      setError(error.message)
       setLoading(false)
     } else {
-      router.push('/admin')
-      router.refresh()
+      window.location.href = '/admin'
     }
   }
 

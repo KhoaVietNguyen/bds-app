@@ -60,13 +60,13 @@ export default function ImageGallery({ images }: { images: PropertyImage[] }) {
           <>
             <button
               onClick={scrollPrev}
-              className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-1.5 shadow hover:bg-white transition-colors"
+              className="absolute left-3 top-1/2 -translate-y-1/2 bg-orange-500/60 rounded-full p-1.5 shadow hover:bg-white transition-colors"
             >
               <ChevronLeft size={20} />
             </button>
             <button
               onClick={scrollNext}
-              className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-1.5 shadow hover:bg-white transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 bg-orange-500/60 rounded-full p-1.5 shadow hover:bg-white transition-colors"
             >
               <ChevronRight size={20} />
             </button>

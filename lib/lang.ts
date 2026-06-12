@@ -115,7 +115,7 @@ export const lang = {
   },
 
   download: {
-    btn: (n: number) => `Tải ảnh (${n})`,
+    btn: (n: number) => `Lưu (${n})`,
     loading: 'Đang tải...',
     preparing: (n: number) => `Đang chuẩn bị ${n} ảnh...`,
     success: 'Tải xuống thành công!',

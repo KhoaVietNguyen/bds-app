@@ -57,7 +57,7 @@ export default function ShareButton({ title, description }: { title: string; des
         {copied ? <Check size={16} className="text-green-500" /> : <Share2 size={16} />}
         {copied ? lang.share.copied : lang.share.btn}
       </Button>
-      <Button onClick={handleZaloShare} variant="outline" className="flex-1 gap-2">
+      <Button onClick={handleZaloShare} variant="outline" className="hidden md:flex flex-1 gap-2">
         <ZaloIcon />
         {lang.share.zaloBtn}
       </Button>

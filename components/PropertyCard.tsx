@@ -7,9 +7,9 @@ import { formatLocation } from '@/lib/locations'
 import { MapPin, BedDouble, Maximize2, Images } from 'lucide-react'
 
 const STATUS_COLORS = {
-  active: 'bg-green-500/20 text-green-600 dark:text-green-400',
-  sold: 'bg-red-500/20 text-red-600 dark:text-red-400',
-  rented: 'bg-orange-500/20 text-orange-600 dark:text-orange-400',
+  active: 'bg-green-500/80 text-white dark:text-white',
+  sold: 'bg-red-500/80 text-white dark:text-white',
+  rented: 'bg-orange-500/80 text-white dark:text-white',
 }
 
 export default function PropertyCard({ property }: { property: Property }) {
@@ -18,7 +18,7 @@ export default function PropertyCard({ property }: { property: Property }) {
 
   return (
     <Link href={`/bds/${property.id}`} className="group block">
-      <div className="bg-card rounded-2xl overflow-hidden shadow-sm border border-border hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+      <div className="bg-card rounded-lg overflow-hidden shadow-sm border border-border hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
         {/* Image */}
         <div className="relative aspect-[4/3] bg-muted overflow-hidden">
           {cover ? (
@@ -36,19 +36,19 @@ export default function PropertyCard({ property }: { property: Property }) {
           )}
           {/* Status badge */}
           <div className="absolute top-3 left-3 flex gap-2">
-            <span className={`${STATUS_COLORS[property.status]} text-xs px-2 py-0.5 rounded-full font-medium`}>
+            <span className={`${STATUS_COLORS[property.status]} text-sm px-2 py-0.5 rounded-md font-bold`}>
               {PROPERTY_STATUS_LABELS[property.status]}
             </span>
           </div>
           {/* Image count */}
           {images.length > 1 && (
-            <div className="absolute bottom-3 right-3 bg-black/50 text-white text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
+            <div className="absolute bottom-3 right-3 bg-black/50 text-white text-sm px-2 py-0.5 rounded-md font-bold flex items-center gap-1">
               <Images size={11} />
               {images.length}
             </div>
           )}
           {/* Type badge */}
-          <div className="absolute top-3 right-3 bg-card/90 backdrop-blur-sm text-foreground text-xs px-2 py-0.5 rounded-full font-medium">
+          <div className="absolute top-3 right-3 bg-card/90 bg-orange-400/90 text-foreground text-sm px-2 py-0.5 rounded-md font-bold">
             {PROPERTY_TYPE_LABELS[property.type]}
           </div>
         </div>

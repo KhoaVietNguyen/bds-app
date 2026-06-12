@@ -1,9 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
 import AdminPropertyTable from '@/components/admin/AdminPropertyTable'
 import { lang } from '@/lib/lang'
-import { Plus } from 'lucide-react'
 
 export default async function AdminPage({
   searchParams,
@@ -38,23 +35,8 @@ export default async function AdminPage({
   const { data: properties } = await query
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">{lang.admin.pageTitle}</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {lang.admin.propertyCount(properties?.length ?? 0)}
-          </p>
-        </div>
-        <Link href="/admin/new">
-          <Button>
-            <Plus size={16} className="mr-1.5" />
-            {lang.admin.addBtn}
-          </Button>
-        </Link>
-      </div>
 
-      <AdminPropertyTable properties={properties ?? []} filters={params} />
-    </div>
+    <AdminPropertyTable properties={properties ?? []} filters={params} />
+
   )
 }
