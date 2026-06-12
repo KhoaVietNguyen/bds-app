@@ -9,9 +9,10 @@ import { toast } from 'sonner'
 interface Props {
   images: { url: string }[]
   propertyId: string
+  compact?: boolean
 }
 
-export default function DownloadButton({ images, propertyId }: Props) {
+export default function DownloadButton({ images, propertyId, compact }: Props) {
   const [loading, setLoading] = useState(false)
 
   async function handleDownload() {
@@ -68,6 +69,14 @@ export default function DownloadButton({ images, propertyId }: Props) {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (compact) {
+    return (
+      <Button onClick={handleDownload} disabled={loading} variant="outline" size="icon" aria-label={lang.download.btn(images.length)} className="h-10 w-10 shrink-0">
+        {loading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+      </Button>
+    )
   }
 
   return (

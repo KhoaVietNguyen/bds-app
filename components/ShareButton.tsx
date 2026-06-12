@@ -4,18 +4,18 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { lang } from '@/lib/lang'
 import { Share2, Check } from 'lucide-react'
+import { SiZalo } from 'react-icons/si'
 import { toast } from 'sonner'
 
 function ZaloIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="48" height="48" rx="10" fill="#0068FF" />
-      <text x="50%" y="54%" dominantBaseline="middle" textAnchor="middle" fill="white" fontSize="24" fontWeight="bold" fontFamily="Arial, sans-serif">Z</text>
-    </svg>
+    <span className="bg-[#0068FF] rounded-sm flex items-center justify-center text-white shrink-0 h-4 w-4">
+      <SiZalo size={12} />
+    </span>
   )
 }
 
-export default function ShareButton({ title, description }: { title: string; description: string }) {
+export default function ShareButton({ title, description, compact }: { title: string; description: string; compact?: boolean }) {
   const [copied, setCopied] = useState(false)
 
   async function handleShare() {
@@ -49,6 +49,14 @@ export default function ShareButton({ title, description }: { title: string; des
       window.open('https://zalo.me', '_blank')
       toast.success(lang.share.zaloToast)
     }
+  }
+
+  if (compact) {
+    return (
+      <Button onClick={handleShare} variant="outline" size="icon" aria-label={lang.share.btn} className="h-10 w-10 shrink-0">
+        {copied ? <Check size={16} className="text-green-500" /> : <Share2 size={16} />}
+      </Button>
+    )
   }
 
   return (

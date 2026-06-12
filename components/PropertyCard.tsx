@@ -1,18 +1,19 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { Property, PROPERTY_TYPE_LABELS, PROPERTY_STATUS_LABELS } from '@/lib/types'
+import { Property, Profile, PROPERTY_TYPE_LABELS, PROPERTY_STATUS_LABELS } from '@/lib/types'
 import { lang } from '@/lib/lang'
 import { formatPrice } from '@/lib/format'
 import { formatLocation } from '@/lib/locations'
-import { MapPin, BedDouble, Maximize2, Images } from 'lucide-react'
+import { MapPin, BedDouble, Maximize2, Images, Phone, UserRound } from 'lucide-react'
 
 const STATUS_COLORS = {
-  active: 'bg-green-500/80 text-white dark:text-white',
+  selling: 'bg-green-500/80 text-white dark:text-white',
+  renting: 'bg-blue-500/80 text-white dark:text-white',
   sold: 'bg-red-500/80 text-white dark:text-white',
   rented: 'bg-orange-500/80 text-white dark:text-white',
 }
 
-export default function PropertyCard({ property }: { property: Property }) {
+export default function PropertyCard({ property, profile }: { property: Property; profile?: Profile | null }) {
   const images = property.property_images?.sort((a, b) => a.order_index - b.order_index) ?? []
   const cover = images[0]?.url
 
@@ -20,7 +21,7 @@ export default function PropertyCard({ property }: { property: Property }) {
     <Link href={`/bds/${property.id}`} className="group block">
       <div className="bg-card rounded-lg overflow-hidden shadow-sm border border-border hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
         {/* Image */}
-        <div className="relative aspect-[4/3] bg-muted overflow-hidden">
+        <div className="relative aspect-video bg-muted overflow-hidden">
           {cover ? (
             <Image
               src={cover}
@@ -48,7 +49,7 @@ export default function PropertyCard({ property }: { property: Property }) {
             </div>
           )}
           {/* Type badge */}
-          <div className="absolute top-3 right-3 bg-card/90 bg-orange-400/90 text-foreground text-sm px-2 py-0.5 rounded-md font-bold">
+          <div className="absolute top-3 right-3 bg-card/90 bg-orange-400/90 text-white text-sm px-2 py-0.5 rounded-md font-bold">
             {PROPERTY_TYPE_LABELS[property.type]}
           </div>
         </div>
@@ -80,8 +81,27 @@ export default function PropertyCard({ property }: { property: Property }) {
             )}
           </div>
 
-          <div className="mt-3 pt-3 border-t border-border">
+          <div className="mt-3 pt-3 border-t border-border flex items-center justify-between gap-2">
             <p className="text-base font-bold text-orange-500">{formatPrice(property.price)}</p>
+            {profile && (profile.avatar_url || profile.phone) && (
+              <div className="flex items-center gap-1.5 min-w-0">
+                <div className="relative h-6 w-6 rounded-full overflow-hidden bg-muted border border-border shrink-0">
+                  {profile.avatar_url ? (
+                    <Image src={profile.avatar_url} alt={profile.name} fill className="object-cover" sizes="24px" />
+                  ) : (
+                    <span className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                      <UserRound size={13} />
+                    </span>
+                  )}
+                </div>
+                {profile.phone && (
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground font-medium truncate">
+                    <Phone size={11} className="shrink-0" />
+                    {profile.phone}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

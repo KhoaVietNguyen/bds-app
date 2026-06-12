@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
-import { useCallback, useState, useTransition } from 'react'
+import { useCallback, useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Property, PROPERTY_TYPE_LABELS, PROPERTY_STATUS_LABELS, PropertyType, CityKey } from '@/lib/types'
@@ -18,7 +18,8 @@ import { Pencil, Trash2, Search, ExternalLink, SlidersHorizontal, X, Loader2 } f
 import { toast } from 'sonner'
 
 const STATUS_COLORS = {
-  active: 'bg-green-500/20 text-green-600 dark:text-green-400',
+  selling: 'bg-green-500/20 text-green-600 dark:text-green-400',
+  renting: 'bg-blue-500/20 text-blue-600 dark:text-blue-400',
   sold: 'bg-red-500/20 text-red-600 dark:text-red-400',
   rented: 'bg-orange-500/20 text-orange-600 dark:text-orange-400',
 }
@@ -39,6 +40,17 @@ export default function AdminPropertyTable({
   const [days, setDays] = useState(filters.days ?? '')
   const [deleting, setDeleting] = useState<string | null>(null)
   const [showFilters, setShowFilters] = useState(false)
+  // Đang mở panel filter mà scroll thật sự (quá 24px) thì tự đóng
+  useEffect(() => {
+    if (!showFilters) return
+    const startY = window.scrollY
+    const onScroll = () => {
+      if (Math.abs(window.scrollY - startY) > 24) setShowFilters(false)
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [showFilters])
+
   const activeFilterCount = [city, district, type, days].filter(v => v && v !== 'all').length
 
   function handleCityChange(val: string | null) {
@@ -141,7 +153,7 @@ export default function AdminPropertyTable({
         </div>
 
         <p className="pl-3 pb-2">
-          <span className={`inline-block text-xs px-2 py-0.5 rounded-md font-bold ${(properties?.length ?? 0) > 0 ? STATUS_COLORS.active : STATUS_COLORS.sold}`}>
+          <span className={`inline-block text-xs px-2 py-0.5 rounded-md font-bold ${(properties?.length ?? 0) > 0 ? STATUS_COLORS.selling : STATUS_COLORS.sold}`}>
             {lang.admin.propertyCount(properties?.length ?? 0)}
           </span>
         </p>

@@ -120,12 +120,12 @@ export default function ProfileForm({ profile }: { profile: Profile | null }) {
 
         <div className="space-y-1.5">
           <Label>{lang.profile.nameLabel} <span className="text-red-500">*</span></Label>
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={lang.profile.namePlaceholder} required />
+          <Input className="text-xs md:text-sm" value={name} onChange={(e) => setName(e.target.value)} placeholder={lang.profile.namePlaceholder} required />
         </div>
 
         <div className="space-y-1.5">
           <Label>{lang.profile.phoneLabel}</Label>
-          <Input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={lang.profile.phonePlaceholder} />
+          <Input className="text-xs md:text-sm" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={lang.profile.phonePlaceholder} />
         </div>
 
         <div className="space-y-1.5">
@@ -135,12 +135,12 @@ export default function ProfileForm({ profile }: { profile: Profile | null }) {
             onChange={(e) => setBio(e.target.value)}
             rows={4}
             placeholder={lang.profile.bioPlaceholder}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
+            className="w-full rounded-lg border border-input bg-transparent dark:bg-input/30 px-2.5 py-2 text-xs md:text-sm transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 resize-none"
           />
         </div>
       </div>
 
-      <Button type="submit" disabled={saving} className="w-full sm:w-auto bg-primary hover:bg-primary/90">
+      <Button type="submit" disabled={saving} className="w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white">
         {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         {lang.profile.saveBtn}
       </Button>

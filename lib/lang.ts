@@ -11,7 +11,8 @@ export const lang = {
   } as Record<string, string>,
 
   propertyStatuses: {
-    active: 'Đang bán/cho thuê',
+    selling: 'Đang bán',
+    renting: 'Đang cho thuê',
     sold: 'Đã bán',
     rented: 'Đã cho thuê',
   } as Record<string, string>,
@@ -80,6 +81,9 @@ export const lang = {
 
   form: {
     sectionBasic: 'Thông tin cơ bản',
+    groupGeneral: 'Thông tin chung',
+    groupLocation: 'Vị trí',
+    groupSpecs: 'Thông số & giá',
     nameLabel: 'Tên BĐS',
     namePlaceholder: 'VD: Villa Hồ Tây 3 phòng ngủ',
     typeLabel: 'Loại BĐS',

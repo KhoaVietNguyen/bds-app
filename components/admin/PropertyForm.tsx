@@ -65,6 +65,7 @@ function SortableImage({ item, index, onRemove }: { item: ImgItem; index: number
         type="button"
         onClick={onRemove}
         onPointerDown={(e) => e.stopPropagation()}
+        aria-label="Xóa ảnh"
         className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1"
       >
         <X size={12} />
@@ -99,7 +100,7 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
   const [areaSqm, setAreaSqm] = useState(property?.area_sqm?.toString() ?? '')
   const [bedrooms, setBedrooms] = useState(property?.bedrooms?.toString() ?? '')
   const [description, setDescription] = useState(property?.description ?? '')
-  const [status, setStatus] = useState<PropertyStatus>(property?.status ?? 'active')
+  const [status, setStatus] = useState<PropertyStatus>(property?.status ?? 'selling')
 
   const [items, setItems] = useState<ImgItem[]>(
     existingImages.map((img) => ({ kind: 'existing' as const, id: img.id, url: img.url }))
@@ -260,103 +261,117 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
       <div className="bg-card/60 backdrop-blur rounded-xl border border-border p-5 space-y-4">
         <h2 className="font-semibold text-foreground">{lang.form.sectionBasic}</h2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="sm:col-span-2 space-y-1.5">
-            <Label>{lang.form.nameLabel} <span className="text-red-500">*</span></Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={lang.form.namePlaceholder} required />
-          </div>
-
+        {/* Nhóm 1: Thông tin chung */}
+        <div className="space-y-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{lang.form.groupGeneral}</h3>
           <div className="space-y-1.5">
-            <Label>{lang.form.typeLabel}</Label>
-            <Select value={type} onValueChange={(v) => setType(v as PropertyType)}>
-              <SelectTrigger className="w-full">{PROPERTY_TYPE_LABELS[type]}</SelectTrigger>
-              <SelectContent>
-                <SelectItem value="villa">{lang.propertyTypes.villa}</SelectItem>
-                <SelectItem value="biet_thu">{lang.propertyTypes.biet_thu}</SelectItem>
-                <SelectItem value="can_ho_dich_vu">{lang.propertyTypes.can_ho_dich_vu}</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label className="text-[10px]">{lang.form.nameLabel} <span className="text-red-500">*</span></Label>
+            <Input className="text-xs md:text-sm" value={name} onChange={(e) => setName(e.target.value)} placeholder={lang.form.namePlaceholder} required />
           </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-[10px]">{lang.form.typeLabel}</Label>
+              <Select value={type} onValueChange={(v) => setType(v as PropertyType)}>
+                <SelectTrigger className="w-full text-xs md:text-sm">{PROPERTY_TYPE_LABELS[type]}</SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="villa">{lang.propertyTypes.villa}</SelectItem>
+                  <SelectItem value="biet_thu">{lang.propertyTypes.biet_thu}</SelectItem>
+                  <SelectItem value="can_ho_dich_vu">{lang.propertyTypes.can_ho_dich_vu}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-[10px]">{lang.form.statusLabel}</Label>
+              <Select value={status} onValueChange={(v) => setStatus(v as PropertyStatus)}>
+                <SelectTrigger className="w-full text-xs md:text-sm">{PROPERTY_STATUS_LABELS[status]}</SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="selling">{lang.propertyStatuses.selling}</SelectItem>
+                  <SelectItem value="renting">{lang.propertyStatuses.renting}</SelectItem>
+                  <SelectItem value="sold">{lang.propertyStatuses.sold}</SelectItem>
+                  <SelectItem value="rented">{lang.propertyStatuses.rented}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
 
+        {/* Nhóm 2: Vị trí */}
+        <div className="space-y-3 pt-4 border-t border-border">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{lang.form.groupLocation}</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-[10px]">{lang.form.cityLabel} <span className="text-red-500">*</span></Label>
+              <Select value={city} onValueChange={(v) => {
+                const newCity = v as CityKey
+                setCity(newCity)
+                if (!DISTRICTS[newCity].includes(district)) setDistrict('')
+              }}>
+                <SelectTrigger className="w-full text-xs md:text-sm">{CITY_LABELS[city]}</SelectTrigger>
+                <SelectContent>
+                  {CITY_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-[10px]">{lang.form.districtLabel} <span className="text-red-500">*</span></Label>
+              <Select value={district} onValueChange={(v) => setDistrict(v ?? '')} disabled={!city}>
+                <SelectTrigger className="w-full text-xs md:text-sm">
+                  {district || <span className="text-muted-foreground">{lang.form.districtLabel}</span>}
+                </SelectTrigger>
+                <SelectContent>
+                  {DISTRICTS[city]?.map((d) => (
+                    <SelectItem key={d} value={d}>{d}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
           <div className="space-y-1.5">
-            <Label>{lang.form.cityLabel} <span className="text-red-500">*</span></Label>
-            <Select value={city} onValueChange={(v) => {
-              const newCity = v as CityKey
-              setCity(newCity)
-              if (!DISTRICTS[newCity].includes(district)) setDistrict('')
-            }}>
-              <SelectTrigger className="w-full">{CITY_LABELS[city]}</SelectTrigger>
-              <SelectContent>
-                {CITY_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label className="text-[10px]">{lang.form.addressLabel}</Label>
+            <Input className="text-xs md:text-sm" value={address} onChange={(e) => setAddress(e.target.value)} placeholder={lang.form.addressPlaceholder} />
           </div>
+        </div>
 
-          <div className="space-y-1.5">
-            <Label>{lang.form.districtLabel} <span className="text-red-500">*</span></Label>
-            <Select value={district} onValueChange={(v) => setDistrict(v ?? '')} disabled={!city}>
-              <SelectTrigger className="w-full">
-                {district || <span className="text-muted-foreground">{lang.form.districtLabel}</span>}
-              </SelectTrigger>
-              <SelectContent>
-                {DISTRICTS[city]?.map((d) => (
-                  <SelectItem key={d} value={d}>{d}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        {/* Nhóm 3: Thông số & giá */}
+        <div className="space-y-3 pt-4 border-t border-border">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{lang.form.groupSpecs}</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-[10px]">{lang.form.priceLabel}</Label>
+              <Input className="text-xs md:text-sm" type="number" value={price} onChange={(e) => setPrice(e.target.value)} placeholder={lang.form.pricePlaceholder} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-[10px]">{lang.form.areaSqmLabel}</Label>
+              <Input className="text-xs md:text-sm" type="number" value={areaSqm} onChange={(e) => setAreaSqm(e.target.value)} placeholder={lang.form.areaSqmPlaceholder} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-[10px]">{lang.form.bedroomsLabel}</Label>
+              <Input className="text-xs md:text-sm" type="number" value={bedrooms} onChange={(e) => setBedrooms(e.target.value)} placeholder={lang.form.bedroomsPlaceholder} />
+            </div>
           </div>
+        </div>
 
-          <div className="sm:col-span-2 space-y-1.5">
-            <Label>{lang.form.addressLabel}</Label>
-            <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder={lang.form.addressPlaceholder} />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>{lang.form.priceLabel}</Label>
-            <Input type="number" value={price} onChange={(e) => setPrice(e.target.value)} placeholder={lang.form.pricePlaceholder} />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>{lang.form.areaSqmLabel}</Label>
-            <Input type="number" value={areaSqm} onChange={(e) => setAreaSqm(e.target.value)} placeholder={lang.form.areaSqmPlaceholder} />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>{lang.form.bedroomsLabel}</Label>
-            <Input type="number" value={bedrooms} onChange={(e) => setBedrooms(e.target.value)} placeholder={lang.form.bedroomsPlaceholder} />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>{lang.form.statusLabel}</Label>
-            <Select value={status} onValueChange={(v) => setStatus(v as PropertyStatus)}>
-              <SelectTrigger className="w-full">{PROPERTY_STATUS_LABELS[status]}</SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">{lang.propertyStatuses.active}</SelectItem>
-                <SelectItem value="sold">{lang.propertyStatuses.sold}</SelectItem>
-                <SelectItem value="rented">{lang.propertyStatuses.rented}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="sm:col-span-2 space-y-1.5">
-            <Label>{lang.form.descLabel}</Label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={4}
-              placeholder={lang.form.descPlaceholder}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
-            />
-          </div>
+        {/* Nhóm 4: Mô tả */}
+        <div className="space-y-3 pt-4 border-t border-border">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{lang.form.descLabel}</h3>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={4}
+            placeholder={lang.form.descPlaceholder}
+            className="w-full rounded-lg border border-input bg-transparent dark:bg-input/30 px-2.5 py-2 text-xs md:text-sm transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 resize-none"
+          />
         </div>
       </div>
 
-      {/* Images */}
+      {/* Images + Save */}
+      <div className="space-y-4">
       <div className="bg-card/60 backdrop-blur rounded-xl border border-border p-5 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold text-foreground">
@@ -367,7 +382,7 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
             {compressing ? lang.form.compressingBtn : lang.form.addImageBtn}
           </Button>
         </div>
-        <input ref={fileInputRef} type="file" multiple accept="image/*" onChange={handleFileChange} className="hidden" />
+        <input ref={fileInputRef} type="file" multiple accept="image/*" onChange={handleFileChange} aria-label={lang.form.addImageBtn} className="hidden" />
 
         {items.length > 0 && (
           <>
@@ -376,7 +391,7 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
             </p>
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={items.map((i) => i.id)} strategy={rectSortingStrategy}>
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                   {items.map((item, i) => (
                     <SortableImage key={item.id} item={item} index={i} onRemove={() => removeItem(item.id)} />
                   ))}
@@ -414,14 +429,11 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
         )}
       </div>
 
-      <div className="flex gap-3">
-        <Button type="button" variant="outline" onClick={() => router.back()} className="flex-1 sm:flex-none">
-          {lang.form.cancelBtn}
-        </Button>
-        <Button type="submit" disabled={saving} className="flex-1 sm:flex-none bg-primary hover:bg-primary/90">
-          {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {property ? lang.form.saveBtn : lang.form.createBtn}
-        </Button>
+      <Button type="submit" disabled={saving} className="w-full bg-orange-500 hover:bg-orange-600 text-white">
+        {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        {property ? lang.form.saveBtn : lang.form.createBtn}
+      </Button>
+      </div>
       </div>
     </form>
   )

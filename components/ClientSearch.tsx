@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useTransition } from 'react'
+import { useState, useCallback, useEffect, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
@@ -29,6 +29,17 @@ export default function ClientSearch({
   const [type, setType] = useState(initialType ?? '')
   const [days, setDays] = useState(initialDays ?? '')
   const [showFilters, setShowFilters] = useState(false)
+
+  // Đang mở panel filter mà scroll thật sự (quá 24px) thì tự đóng
+  useEffect(() => {
+    if (!showFilters) return
+    const startY = window.scrollY
+    const onScroll = () => {
+      if (Math.abs(window.scrollY - startY) > 24) setShowFilters(false)
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [showFilters])
 
   const activeFilterCount = [city, district, type, days].filter(v => v && v !== 'all').length
 
@@ -117,7 +128,7 @@ export default function ClientSearch({
   )
 
   return (
-    <div className="space-y-3">
+    <div>
       {/* Search row */}
       <div className="flex gap-2">
         <Input
@@ -165,7 +176,7 @@ export default function ClientSearch({
       </div>
 
       {/* Desktop: filters in one row */}
-      <div className="hidden md:flex gap-2 items-end">
+      <div className="hidden md:flex gap-2 items-end mt-3">
         <div className="flex flex-col gap-0.5 flex-1 min-w-0">{label(lang.search.cityLabel)}{citySelect}</div>
         <div className="flex flex-col gap-0.5 flex-1 min-w-0">{label(lang.search.districtLabel)}{districtSelect}</div>
         <div className="flex flex-col gap-0.5 flex-1 min-w-0">{label(lang.search.typeLabel)}{typeSelect}</div>
@@ -174,7 +185,7 @@ export default function ClientSearch({
 
       {/* Mobile: collapsible filter panel */}
       {showFilters && (
-        <div className="md:hidden bg-card/60 backdrop-blur rounded-xl border border-border p-3 space-y-3">
+        <div className="md:hidden bg-card/60 backdrop-blur rounded-xl border border-border p-3 space-y-3 mt-3">
           <div className="grid grid-cols-2 gap-2">
             <div className="flex flex-col gap-0.5">{label(lang.search.cityLabel)}{citySelect}</div>
             <div className="flex flex-col gap-0.5">{label(lang.search.typeLabel)}{typeSelect}</div>

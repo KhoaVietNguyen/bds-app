@@ -8,35 +8,35 @@ INSERT INTO properties (name, type, city, district, address, price, area_sqm, be
   'villa', 'ho_chi_minh', 'Quận 2', '15 Đường Quốc Hương',
   150000000000, 450, 5,
   'Villa cao cấp phong cách hiện đại tọa lạc tại Thảo Điền. Hồ bơi riêng, sân vườn xanh mát, nội thất nhập khẩu châu Âu. Hệ thống smarthome, thang máy riêng, gara 2 xe.',
-  'active'
+  'selling'
 ),
 (
   'Biệt thự An Phú 5 phòng ngủ, gara đôi',
   'biet_thu', 'ho_chi_minh', 'Quận 2', '28 Đường Thảo Điền',
   185000000000, 520, 5,
   'Biệt thự compound An Phú an ninh 24/7, thiết kế kiến trúc Pháp cổ điển. 5 phòng ngủ suite, 2 phòng khách, bếp đảo nhập khẩu. Vị trí đắc địa gần trường quốc tế.',
-  'active'
+  'selling'
 ),
 (
   'Villa Thủ Thiêm view sông, phong cách resort',
   'villa', 'ho_chi_minh', 'Quận 2', '42 Đường Mai Chí Thọ',
   200000000000, 600, 6,
   'Villa nghỉ dưỡng đẳng cấp 5 sao ngay bờ sông Sài Gòn. Thiết kế resort cao cấp với hồ bơi tràn bờ, vườn cây nhiệt đới, bến thuyền riêng. Nội thất Ý nhập khẩu toàn bộ.',
-  'active'
+  'selling'
 ),
 (
   'Biệt thự Compound Thảo Điền đẳng cấp',
   'biet_thu', 'ho_chi_minh', 'Quận 2', '8 Đường Xuân Thủy',
   130000000000, 380, 4,
   'Biệt thự trong khu compound cao cấp Thảo Điền, an ninh nghiêm ngặt. Thiết kế Scandinavian tối giản, ánh sáng tự nhiên tối ưu. Sân vườn riêng 150m², hồ bơi chung khu.',
-  'active'
+  'selling'
 ),
 (
   'Villa An Khánh 3 tầng hồ bơi vô cực',
   'villa', 'ho_chi_minh', 'Quận 2', '19 Đường Nguyễn Duy Trinh',
   110000000000, 350, 4,
   'Villa 3 tầng hiện đại với hồ bơi vô cực tầng thượng view toàn cảnh. Phòng khách thông tầng 6m, bếp mở cao cấp. Thiết kế tối ưu thông gió tự nhiên, gần metro An Phú.',
-  'active'
+  'selling'
 ),
 (
   'Villa phong cách Á Đông, vườn rộng 800m²',
@@ -50,28 +50,28 @@ INSERT INTO properties (name, type, city, district, address, price, area_sqm, be
   'villa', 'ho_chi_minh', 'Bình Thạnh', '10 Đường Xô Viết Nghệ Tĩnh',
   125000000000, 400, 4,
   'Villa sang trọng view trực diện sông Sài Gòn và Landmark 81. Thiết kế contemporary với kính cường lực toàn diện. Hồ bơi riêng, rooftop garden, thang máy, gara ngầm.',
-  'active'
+  'selling'
 ),
 (
   'Biệt thự Bình Thạnh sân thượng, hồ bơi',
   'biet_thu', 'ho_chi_minh', 'Bình Thạnh', '55 Đường Đinh Bộ Lĩnh',
   90000000000, 310, 3,
   'Biệt thự phố 3 tầng thiết kế thông minh với sân thượng hồ bơi. 3 phòng ngủ master suite, phòng gym riêng, văn phòng tại gia. Gần cầu Văn Thánh, tiện di chuyển trung tâm.',
-  'active'
+  'selling'
 ),
 (
   'Villa compound Bình Thạnh an ninh 24/7',
   'villa', 'ho_chi_minh', 'Bình Thạnh', '22 Đường Nguyễn Hữu Cảnh',
   140000000000, 420, 5,
   'Villa nằm trong khu compound cao cấp ven sông, bảo vệ an ninh 24/7 với camera AI. Hồ bơi riêng 12x6m, sân BBQ ngoài trời, gym và phòng giải trí khép kín.',
-  'active'
+  'selling'
 ),
 (
   'Biệt thự hiện đại cạnh Landmark 81',
   'biet_thu', 'ho_chi_minh', 'Bình Thạnh', '7 Đường Nguyễn Cửu Vân',
   165000000000, 480, 5,
   'Biệt thự vị trí kim cương cách Landmark 81 chỉ 500m. Thiết kế minimalist tinh tế, nội thất Bộ B&B Italia nhập khẩu Italy. Rooftop infinity pool, view toàn cảnh thành phố.',
-  'active'
+  'selling'
 ),
 (
   'Villa phong cách Bali, vườn nhiệt đới',
@@ -85,28 +85,28 @@ INSERT INTO properties (name, type, city, district, address, price, area_sqm, be
   'biet_thu', 'ho_chi_minh', 'Quận 3', '12 Đường Võ Thị Sáu',
   195000000000, 550, 5,
   'Biệt thự cổ điển kiến trúc Pháp thế kỷ XX được phục dựng nguyên vẹn. 5 phòng ngủ cao 4m, parquet gỗ sồi, trần thạch cao chạm khắc. Vị trí trung tâm quận 3, hiếm có.',
-  'active'
+  'selling'
 ),
 (
   'Villa Địa Trung Hải Quận 3 trung tâm',
   'villa', 'ho_chi_minh', 'Quận 3', '20 Đường Nam Kỳ Khởi Nghĩa',
   155000000000, 430, 5,
   'Villa phong cách Địa Trung Hải với tường trắng, mái ngói đỏ đặc trưng. Sân trong courtyard với đài phun nước, vườn olive. 5 phòng ngủ cao cấp, phòng rượu, garage 3 xe.',
-  'active'
+  'selling'
 ),
 (
   'Biệt thự phố Quận 3 gần Hồ Con Rùa',
   'biet_thu', 'ho_chi_minh', 'Quận 3', '5 Đường Trần Cao Vân',
   120000000000, 360, 4,
   'Biệt thự phố 4 tầng vị trí đắc địa cách Hồ Con Rùa 200m. Thiết kế Art Deco hiện đại, nội thất thương hiệu Molteni&C. Sân thượng panorama, thang máy riêng.',
-  'active'
+  'selling'
 ),
 (
   'Villa Quận 3 hồ bơi sân thượng thoáng mát',
   'villa', 'ho_chi_minh', 'Quận 3', '17 Đường Lê Quý Đôn',
   170000000000, 490, 5,
   'Villa 5 tầng thiết kế tropical modern với hồ bơi sân thượng nhìn ra toàn thành phố. Kính two-way toàn bộ mặt tiền, phòng khách 8m thông tầng. Trang bị smarthome Crestron.',
-  'active'
+  'selling'
 ),
 (
   'Biệt thự Quận 3 nội thất cao cấp 4 phòng ngủ',
@@ -120,28 +120,28 @@ INSERT INTO properties (name, type, city, district, address, price, area_sqm, be
   'villa', 'ho_chi_minh', 'Quận 7', '3 Đường Nguyễn Lương Bằng',
   145000000000, 460, 5,
   'Villa trong khu đô thị Phú Mỹ Hưng chuẩn quốc tế, môi trường sống lý tưởng cho gia đình. 5 phòng ngủ, hồ bơi riêng, sân vườn 300m², gần trường RMIT và Crescent Mall.',
-  'active'
+  'selling'
 ),
 (
   'Biệt thự Quận 1 trung tâm, cơ hội hiếm có',
   'biet_thu', 'ho_chi_minh', 'Quận 1', '25 Đường Phùng Khắc Khoan',
   190000000000, 540, 5,
   'Biệt thự siêu hiếm ngay trung tâm Quận 1, đất mặt tiền 12m. Thiết kế Neo-Classical, nội thất Baroque đẳng cấp. Tiềm năng khai thác thương mại cao, cách Nhà Thờ Đức Bà 5 phút.',
-  'active'
+  'selling'
 ),
 (
   'Villa Tây Hồ phong cách Nhật Bản',
   'villa', 'ha_noi', 'Tây Hồ', '47 Đường Đặng Thai Mai',
   160000000000, 470, 5,
   'Villa phong cách Nhật Bản Wabi-sabi trên con đường Đặng Thai Mai thơ mộng. Vườn Nhật 250m² với hòn non bộ, suối nhân tạo. 5 phòng ngủ gỗ hinoki tự nhiên, view hồ Tây.',
-  'active'
+  'selling'
 ),
 (
   'Biệt thự Cầu Giấy 4 tầng nội thất cao cấp',
   'biet_thu', 'ha_noi', 'Cầu Giấy', '30 Đường Trần Thái Tông',
   85000000000, 320, 4,
   'Biệt thự 4 tầng thiết kế hiện đại tại khu vực sôi động Cầu Giấy. 4 phòng ngủ cao cấp, phòng gym, sân thượng BBQ. Gần ĐH Quốc Gia, Keangnam, thuận tiện di chuyển toàn thành phố.',
-  'active'
+  'selling'
 );
 
 -- Seed ảnh cho từng property

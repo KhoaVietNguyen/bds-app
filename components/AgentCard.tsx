@@ -2,59 +2,70 @@ import Image from 'next/image'
 import { Profile } from '@/lib/types'
 import { lang } from '@/lib/lang'
 import { Phone, UserRound } from 'lucide-react'
+import { SiZalo } from 'react-icons/si'
 
-function ZaloIcon() {
+export function ZaloIcon({ size = 18 }: { size?: number }) {
   return (
-    <svg width="15" height="15" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="48" height="48" rx="10" fill="#0068FF" />
-      <text x="50%" y="54%" dominantBaseline="middle" textAnchor="middle" fill="white" fontSize="24" fontWeight="bold" fontFamily="Arial, sans-serif">Z</text>
-    </svg>
+    <span
+      style={{ width: size, height: size }}
+      className="bg-[#0068FF] rounded-sm flex items-center justify-center text-white shrink-0"
+    >
+      <SiZalo size={size * 0.65} />
+    </span>
   )
 }
 
-export default function AgentCard({ profile }: { profile: Profile | null }) {
-  if (!profile || (!profile.name && !profile.phone)) return null
-
-  const phoneDigits = profile.phone?.replace(/\D/g, '') ?? ''
+/** Hàng thông tin sale + actions, dùng trong footer cố định của trang detail */
+export default function AgentCard({ profile, actions }: { profile: Profile | null; actions?: React.ReactNode }) {
+  const hasProfile = !!profile && (!!profile.name || !!profile.phone)
+  const phoneDigits = profile?.phone?.replace(/\D/g, '') ?? ''
 
   return (
-    <div className="bg-card rounded-2xl p-5 shadow-sm border border-border space-y-4">
-      <div className="flex items-start gap-4">
-        <div className="relative h-16 w-16 rounded-full overflow-hidden bg-muted border border-border shrink-0">
-          {profile.avatar_url ? (
-            <Image src={profile.avatar_url} alt={profile.name} fill className="object-cover" sizes="64px" />
-          ) : (
-            <span className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-              <UserRound size={28} />
-            </span>
-          )}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-xs text-muted-foreground">{lang.profile.agentTitle}</p>
-          <p className="font-bold text-foreground text-lg leading-snug">{profile.name}</p>
-          {profile.bio && (
-            <p className="text-sm text-muted-foreground leading-relaxed mt-1 whitespace-pre-line">{profile.bio}</p>
-          )}
-        </div>
+    <div className="flex items-center gap-2.5">
+      {hasProfile && (
+        <>
+          {/* Avatar */}
+          <div className="relative h-10 w-10 rounded-full overflow-hidden bg-muted border border-border shrink-0">
+            {profile!.avatar_url ? (
+              <Image src={profile!.avatar_url} alt={profile!.name} fill className="object-cover" sizes="40px" />
+            ) : (
+              <span className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                <UserRound size={20} />
+              </span>
+            )}
+          </div>
+
+          {/* Tên */}
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] text-muted-foreground leading-tight">{lang.profile.agentTitle}</p>
+            <p className="text-sm font-bold text-foreground truncate leading-snug">{profile!.name}</p>
+          </div>
+        </>
+      )}
+
+      {/* Share / Save */}
+      <div className={`flex items-center gap-2 shrink-0 ${hasProfile ? '' : 'flex-1 justify-end'}`}>
+        {actions}
       </div>
 
+      {/* Liên hệ */}
       {phoneDigits && (
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <a
             href={`tel:${phoneDigits}`}
-            className="flex-1 flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-lg py-2.5 transition-colors"
+            className="flex items-center gap-1.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-sm px-3 h-10 transition-colors"
           >
-            <Phone size={15} />
-            {lang.profile.callBtn} · {profile.phone}
+            <Phone size={14} />
+            <span className="hidden sm:inline">{profile!.phone}</span>
+            <span className="sm:hidden">{lang.profile.callBtn}</span>
           </a>
           <a
             href={`https://zalo.me/${phoneDigits}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 border border-border bg-card hover:bg-accent text-foreground text-sm font-medium rounded-lg px-4 py-2.5 transition-colors"
+            aria-label={lang.profile.zaloBtn}
           >
-            <ZaloIcon />
-            {lang.profile.zaloBtn}
+            <ZaloIcon size={40} />
           </a>
         </div>
       )}

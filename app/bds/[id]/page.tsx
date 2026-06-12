@@ -25,7 +25,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 }
 
 const STATUS_COLORS = {
-  active: 'bg-green-500/20 text-green-600 dark:text-green-400',
+  selling: 'bg-green-500/20 text-green-600 dark:text-green-400',
+  renting: 'bg-blue-500/20 text-blue-600 dark:text-blue-400',
   sold: 'bg-red-500/20 text-red-600 dark:text-red-400',
   rented: 'bg-orange-500/20 text-orange-600 dark:text-orange-400',
 }
@@ -62,11 +63,15 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
             <Building2 size={18} />
           </div>
           <span className="font-bold text-foreground flex-1"></span>
+          <ShareButton title={property.name} description={shareDescription} compact />
+          {sortedImages.length > 0 && (
+            <DownloadButton images={sortedImages} propertyId={property.id} compact />
+          )}
           <ThemeToggle />
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 py-5 space-y-5 pb-24">
+      <main className="max-w-3xl mx-auto px-4 py-5 space-y-5 pb-28">
         {/* Gallery */}
         <ImageGallery images={sortedImages as any} />
 
@@ -81,11 +86,11 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
               </div>
               
               <div className="flex items-center gap-2 flex-wrap mb-2">
+                <span className={`text-lg font-bold px-5 py-1 rounded ${STATUS_COLORS[property.status as keyof typeof STATUS_COLORS]}`}>
+                  {PROPERTY_STATUS_LABELS[property.status as keyof typeof PROPERTY_STATUS_LABELS]}
+                </span>
                  <span className="text-xs bg-orange-500/80 text-white font-bold px-2 py-1 rounded">
                   {PROPERTY_TYPE_LABELS[property.type as keyof typeof PROPERTY_TYPE_LABELS]}
-                </span>
-                <span className={`text-xs font-bold px-2 py-1 rounded ${STATUS_COLORS[property.status as keyof typeof STATUS_COLORS]}`}>
-                  {PROPERTY_STATUS_LABELS[property.status as keyof typeof PROPERTY_STATUS_LABELS]}
                 </span>
                 <span className="font-mono text-xs bg-primary/10 text-primary px-2 py-1 rounded font-bold flex items-center gap-1">
                   <Hash size={11} />
@@ -129,20 +134,16 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
             </div>
           )}
         </div>
-
-        {/* Sale contact */}
-        <AgentCard profile={profile} />
       </main>
 
-      {/* FAB actions */}
-      <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border p-4 shadow-xl z-20">
-        <div className="max-w-3xl mx-auto flex gap-3">
-          <ShareButton title={property.name} description={shareDescription} />
-          {sortedImages.length > 0 && (
-            <DownloadButton images={sortedImages} propertyId={property.id} />
-          )}
+      {/* Sale contact bar */}
+      {(profile?.name || profile?.phone) && (
+        <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-xl z-20 pb-[env(safe-area-inset-bottom)]">
+          <div className="max-w-3xl mx-auto p-3">
+            <AgentCard profile={profile} />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

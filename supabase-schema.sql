@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS properties (
   area_sqm    INTEGER,
   bedrooms    INTEGER,
   description TEXT,
-  status      TEXT DEFAULT 'active' CHECK (status IN ('active', 'sold', 'rented')),
+  status      TEXT DEFAULT 'selling' CHECK (status IN ('selling', 'renting', 'sold', 'rented')),
   created_at  TIMESTAMPTZ DEFAULT now(),
   updated_at  TIMESTAMPTZ DEFAULT now()
 );
