@@ -1,9 +1,10 @@
-import { createClient } from '@/lib/supabase/server'
+import { unstable_cache } from 'next/cache'
+import { createBrowserClient } from '@supabase/ssr'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { PROPERTY_TYPE_LABELS, PROPERTY_STATUS_LABELS, CityKey } from '@/lib/types'
 import { lang } from '@/lib/lang'
-import { formatPrice, formatDate } from '@/lib/format'
+import { formatPrice, formatPriceUsd, formatDate } from '@/lib/format'
 import { formatLocation } from '@/lib/locations'
 import ImageGallery from '@/components/ImageGallery'
 import AgentCard from '@/components/AgentCard'
@@ -13,14 +14,34 @@ import ThemeToggle from '@/components/ThemeToggle'
 import { Building2, MapPin, BedDouble, Maximize2, ChevronLeft, Hash } from 'lucide-react'
 import type { Metadata } from 'next'
 
+function getSupabase() {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+}
+
+const getPropertyDetail = unstable_cache(
+  async (id: string) => {
+    const supabase = getSupabase()
+    const [{ data: property }, { data: images }, { data: profile }] = await Promise.all([
+      supabase.from('properties').select('*').eq('id', id).single(),
+      supabase.from('property_images').select('*').eq('property_id', id).order('order_index'),
+      supabase.from('profile').select('*').eq('id', 1).single(),
+    ])
+    return { property, images: images ?? [], profile }
+  },
+  ['property-detail'],
+  { revalidate: 60, tags: ['property-detail'] }
+)
+
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params
-  const supabase = await createClient()
-  const { data } = await supabase.from('properties').select('name, city, district, type').eq('id', id).single()
-  if (!data) return { title: lang.property.notFound }
+  const { property } = await getPropertyDetail(id)
+  if (!property) return { title: lang.property.notFound }
   return {
-    title: `${data.name} | ${lang.app.name}`,
-    description: `${PROPERTY_TYPE_LABELS[data.type as keyof typeof PROPERTY_TYPE_LABELS]} tại ${formatLocation(data.district, data.city as CityKey)}`,
+    title: `${property.name} | ${lang.app.name}`,
+    description: `${PROPERTY_TYPE_LABELS[property.type as keyof typeof PROPERTY_TYPE_LABELS]} tại ${formatLocation(property.district, property.city as CityKey)}`,
   }
 }
 
@@ -29,26 +50,16 @@ const STATUS_COLORS = {
   renting: 'bg-blue-500/20 text-blue-600 dark:text-blue-400',
   sold: 'bg-red-500/20 text-red-600 dark:text-red-400',
   rented: 'bg-orange-500/20 text-orange-600 dark:text-orange-400',
+  vacant: 'bg-purple-500/20 text-purple-600 dark:text-purple-400',
 }
 
 export default async function PropertyDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const supabase = await createClient()
-
-  const { data: property } = await supabase
-    .from('properties')
-    .select('*')
-    .eq('id', id)
-    .single()
+  const { property, images, profile } = await getPropertyDetail(id)
 
   if (!property) notFound()
 
-  const [{ data: images }, { data: profile }] = await Promise.all([
-    supabase.from('property_images').select('*').eq('property_id', id).order('order_index'),
-    supabase.from('profile').select('*').eq('id', 1).single(),
-  ])
-
-  const sortedImages = images ?? []
+  const sortedImages = images
   const shareDescription = `${PROPERTY_TYPE_LABELS[property.type as keyof typeof PROPERTY_TYPE_LABELS]} tại ${formatLocation(property.district, property.city as CityKey)} - ${formatPrice(property.price)}`
 
   return (
@@ -99,7 +110,12 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
 
               </div>
               <div className="border-t border-b py-2 flex items-end justify-between gap-3">
-                <p className="text-2xl font-bold text-primary">{formatPrice(property.price)}</p>
+                <div>
+                  <p className="text-2xl font-bold text-primary">{formatPrice(property.price)} <span className="text-sm font-normal text-muted-foreground">VNĐ</span></p>
+                  {property.price_usd && (
+                    <p className="text-sm text-muted-foreground">{formatPriceUsd(property.price_usd)} USD</p>
+                  )}
+                </div>
               </div>
               <h1 className="text-xl pt-2 font-bold text-foreground leading-snug">{property.name}</h1>
             </div>

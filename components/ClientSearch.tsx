@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/u
 import { Input } from '@/components/ui/input'
 import { lang } from '@/lib/lang'
 import { CITY_OPTIONS, CITY_LABELS, DISTRICTS, CityKey } from '@/lib/locations'
+import { PropertyStatus } from '@/lib/types'
 import { Search, X, SlidersHorizontal, Loader2 } from 'lucide-react'
 
 export default function ClientSearch({
@@ -14,12 +15,14 @@ export default function ClientSearch({
   initialCity,
   initialDistrict,
   initialType,
+  initialStatus,
   initialDays,
 }: {
   initialQ?: string
   initialCity?: string
   initialDistrict?: string
   initialType?: string
+  initialStatus?: string
   initialDays?: string
 }) {
   const router = useRouter()
@@ -27,6 +30,7 @@ export default function ClientSearch({
   const [city, setCity] = useState(initialCity ?? '')
   const [district, setDistrict] = useState(initialDistrict ?? '')
   const [type, setType] = useState(initialType ?? '')
+  const [status, setStatus] = useState(initialStatus ?? '')
   const [days, setDays] = useState(initialDays ?? '')
   const [showFilters, setShowFilters] = useState(false)
 
@@ -41,7 +45,7 @@ export default function ClientSearch({
     return () => window.removeEventListener('scroll', onScroll)
   }, [showFilters])
 
-  const activeFilterCount = [city, district, type, days].filter(v => v && v !== 'all').length
+  const activeFilterCount = [city, district, type, status, days].filter(v => v && v !== 'all').length
 
   const [isPending, startTransition] = useTransition()
 
@@ -51,13 +55,14 @@ export default function ClientSearch({
     if (city) params.set('city', city)
     if (district) params.set('district', district)
     if (type && type !== 'all') params.set('type', type)
+    if (status && status !== 'all') params.set('status', status)
     if (days && days !== 'all') params.set('days', days)
     startTransition(() => router.push(`/?${params.toString()}`))
     setShowFilters(false)
   }, [q, city, district, type, days, router])
 
   const clear = () => {
-    setQ(''); setCity(''); setDistrict(''); setType(''); setDays('')
+    setQ(''); setCity(''); setDistrict(''); setType(''); setStatus(''); setDays('')
     startTransition(() => router.push('/'))
     setShowFilters(false)
   }
@@ -97,13 +102,30 @@ export default function ClientSearch({
   const typeSelect = (
     <Select value={type || 'all'} onValueChange={(v) => setType(v === 'all' ? '' : (v ?? ''))}>
       <SelectTrigger className="bg-card/60 backdrop-blur border-border w-full h-8 text-xs md:h-9 md:text-sm">
-        {type && type !== 'all' ? ({ villa: lang.propertyTypes.villa, biet_thu: lang.propertyTypes.biet_thu, can_ho_dich_vu: lang.propertyTypes.can_ho_dich_vu } as Record<string,string>)[type] : 'Tất cả'}
+        {type && type !== 'all' ? ({ villa: lang.propertyTypes.villa, biet_thu: lang.propertyTypes.biet_thu, can_ho_dich_vu: lang.propertyTypes.can_ho_dich_vu, chung_cu: lang.propertyTypes.chung_cu } as Record<string,string>)[type] : 'Tất cả'}
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="all">Tất cả</SelectItem>
         <SelectItem value="villa">{lang.propertyTypes.villa}</SelectItem>
         <SelectItem value="biet_thu">{lang.propertyTypes.biet_thu}</SelectItem>
         <SelectItem value="can_ho_dich_vu">{lang.propertyTypes.can_ho_dich_vu}</SelectItem>
+        <SelectItem value="chung_cu">{lang.propertyTypes.chung_cu}</SelectItem>
+      </SelectContent>
+    </Select>
+  )
+
+  const statusSelect = (
+    <Select value={status || 'all'} onValueChange={(v) => setStatus(v === 'all' ? '' : v)}>
+      <SelectTrigger className="bg-card/60 backdrop-blur border-border w-full h-8 text-xs md:h-9 md:text-sm">
+        {status && status !== 'all' ? lang.propertyStatuses[status as PropertyStatus] : lang.search.statusAll}
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">{lang.search.statusAll}</SelectItem>
+        <SelectItem value="selling">{lang.propertyStatuses.selling}</SelectItem>
+        <SelectItem value="renting">{lang.propertyStatuses.renting}</SelectItem>
+        <SelectItem value="sold">{lang.propertyStatuses.sold}</SelectItem>
+        <SelectItem value="rented">{lang.propertyStatuses.rented}</SelectItem>
+        <SelectItem value="vacant">{lang.propertyStatuses.vacant}</SelectItem>
       </SelectContent>
     </Select>
   )
@@ -180,6 +202,7 @@ export default function ClientSearch({
         <div className="flex flex-col gap-0.5 flex-1 min-w-0">{label(lang.search.cityLabel)}{citySelect}</div>
         <div className="flex flex-col gap-0.5 flex-1 min-w-0">{label(lang.search.districtLabel)}{districtSelect}</div>
         <div className="flex flex-col gap-0.5 flex-1 min-w-0">{label(lang.search.typeLabel)}{typeSelect}</div>
+        <div className="flex flex-col gap-0.5 flex-1 min-w-0">{label(lang.search.statusLabel)}{statusSelect}</div>
         <div className="flex flex-col gap-0.5 flex-1 min-w-0">{label(lang.search.dateLabel)}{daysSelect}</div>
       </div>
 
@@ -190,7 +213,8 @@ export default function ClientSearch({
             <div className="flex flex-col gap-0.5">{label(lang.search.cityLabel)}{citySelect}</div>
             <div className="flex flex-col gap-0.5">{label(lang.search.typeLabel)}{typeSelect}</div>
             <div className="flex flex-col gap-0.5">{label(lang.search.districtLabel)}{districtSelect}</div>
-            <div className="flex flex-col gap-0.5">{label(lang.search.dateLabel)}{daysSelect}</div>
+            <div className="flex flex-col gap-0.5">{label(lang.search.statusLabel)}{statusSelect}</div>
+            <div className="flex flex-col gap-0.5 col-span-2">{label(lang.search.dateLabel)}{daysSelect}</div>
           </div>
           <div className="flex gap-2">
             <Button onClick={search} disabled={isPending} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white h-8">

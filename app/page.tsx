@@ -10,7 +10,7 @@ import { ZaloIcon } from '@/components/AgentCard'
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; city?: string; district?: string; type?: string; days?: string }>
+  searchParams: Promise<{ q?: string; city?: string; district?: string; type?: string; status?: string; days?: string }>
 }) {
   const params = await searchParams
   const supabase = await createClient()
@@ -32,6 +32,9 @@ export default async function HomePage({
   if (params.type) {
     query = query.eq('type', params.type)
   }
+  if (params.status) {
+    query = query.eq('status', params.status)
+  }
   if (params.days) {
     const since = new Date(Date.now() - parseInt(params.days) * 86_400_000).toISOString()
     query = query.gte('created_at', since)
@@ -42,7 +45,7 @@ export default async function HomePage({
     supabase.from('profile').select('*').eq('id', 1).single(),
   ])
 
-  const hasFilters = params.q || params.city || params.district || params.type || params.days
+  const hasFilters = params.q || params.city || params.district || params.type || params.status || params.days
 
   return (
     <div className="min-h-screen bg-background">
@@ -96,6 +99,7 @@ export default async function HomePage({
               initialCity={params.city}
               initialDistrict={params.district}
               initialType={params.type}
+              initialStatus={params.status}
               initialDays={params.days}
             />
           </div>

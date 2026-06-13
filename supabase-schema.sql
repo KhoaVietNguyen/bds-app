@@ -13,15 +13,16 @@ CREATE SEQUENCE property_seq START 1;
 CREATE TABLE IF NOT EXISTS properties (
   id          TEXT PRIMARY KEY DEFAULT 'BDS-' || LPAD(nextval('property_seq')::text, 5, '0'),
   name        TEXT NOT NULL,
-  type        TEXT NOT NULL CHECK (type IN ('villa', 'biet_thu', 'can_ho_dich_vu')),
+  type        TEXT NOT NULL CHECK (type IN ('villa', 'biet_thu', 'can_ho_dich_vu', 'chung_cu')),
   city        TEXT NOT NULL CHECK (city IN ('ha_noi', 'ho_chi_minh')),
   district    TEXT NOT NULL,
   address     TEXT,
   price       BIGINT,
+  price_usd   BIGINT,
   area_sqm    INTEGER,
   bedrooms    INTEGER,
   description TEXT,
-  status      TEXT DEFAULT 'selling' CHECK (status IN ('selling', 'renting', 'sold', 'rented')),
+  status      TEXT DEFAULT 'selling' CHECK (status IN ('selling', 'renting', 'sold', 'rented', 'vacant')),
   created_at  TIMESTAMPTZ DEFAULT now(),
   updated_at  TIMESTAMPTZ DEFAULT now()
 );

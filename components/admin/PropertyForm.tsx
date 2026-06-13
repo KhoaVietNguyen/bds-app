@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import imageCompression from 'browser-image-compression'
@@ -27,10 +27,16 @@ import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from '@d
 import { CSS } from '@dnd-kit/utilities'
 
 const COMPRESSION_OPTIONS = {
-  maxSizeMB: 0.5,        // 500 KB
+  maxSizeMB: 0.5,
   maxWidthOrHeight: 1920,
   useWebWorker: true,
   fileType: 'image/webp',
+}
+const MAX_SIZE_BYTES = COMPRESSION_OPTIONS.maxSizeMB * 1024 * 1024
+
+async function compressIfNeeded(file: File): Promise<File> {
+  if (file.size <= MAX_SIZE_BYTES) return file
+  return imageCompression(file, COMPRESSION_OPTIONS)
 }
 
 type ImgItem =
@@ -88,6 +94,7 @@ interface Props {
 export default function PropertyForm({ property, existingImages = [] }: Props) {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const descRef = useRef<HTMLTextAreaElement>(null)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
 
@@ -97,6 +104,7 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
   const [district, setDistrict] = useState(property?.district ?? '')
   const [address, setAddress] = useState(property?.address ?? '')
   const [price, setPrice] = useState(property?.price?.toString() ?? '')
+  const [priceUsd, setPriceUsd] = useState(property?.price_usd?.toString() ?? '')
   const [areaSqm, setAreaSqm] = useState(property?.area_sqm?.toString() ?? '')
   const [bedrooms, setBedrooms] = useState(property?.bedrooms?.toString() ?? '')
   const [description, setDescription] = useState(property?.description ?? '')
@@ -107,6 +115,14 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
   )
   const [uploadProgress, setUploadProgress] = useState(0)
   const [compressing, setCompressing] = useState(false)
+  const [isDragOver, setIsDragOver] = useState(false)
+
+  useEffect(() => {
+    if (descRef.current) {
+      descRef.current.style.height = 'auto'
+      descRef.current.style.height = descRef.current.scrollHeight + 'px'
+    }
+  }, [])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -123,16 +139,13 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
     })
   }
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? [])
-    e.target.value = ''
+  const processImageFiles = async (files: File[], successMsg?: string) => {
     if (files.length === 0) return
-
     setCompressing(true)
     try {
       const compressed: ImgItem[] = await Promise.all(
         files.map(async (file) => {
-          const compressedFile = await imageCompression(file, COMPRESSION_OPTIONS)
+          const compressedFile = await compressIfNeeded(file)
           return {
             kind: 'new' as const,
             id: crypto.randomUUID(),
@@ -142,12 +155,41 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
         })
       )
       setItems((prev) => [...prev, ...compressed])
+      if (successMsg) toast.success(successMsg)
     } catch {
       toast.error(lang.form.errorCompress)
     } finally {
       setCompressing(false)
     }
   }
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? [])
+    e.target.value = ''
+    await processImageFiles(files)
+  }
+
+  const handleExternalDrop = async (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(false)
+    const files = Array.from(e.dataTransfer.files).filter((f) => f.type.startsWith('image/'))
+    await processImageFiles(files, files.length > 1 ? `Đã thêm ${files.length} ảnh` : undefined)
+  }
+
+  useEffect(() => {
+    const handlePaste = async (e: ClipboardEvent) => {
+      const imageFiles: File[] = []
+      for (const item of Array.from(e.clipboardData?.items ?? [])) {
+        if (item.type.startsWith('image/')) {
+          const file = item.getAsFile()
+          if (file) imageFiles.push(file)
+        }
+      }
+      await processImageFiles(imageFiles, imageFiles.length > 0 ? `Đã dán ${imageFiles.length} ảnh` : undefined)
+    }
+    window.addEventListener('paste', handlePaste)
+    return () => window.removeEventListener('paste', handlePaste)
+  }, [])
 
   const removeItem = (id: string) => {
     setItems((prev) => {
@@ -173,6 +215,7 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
         district,
         address: address || null,
         price: price ? parseInt(price) : null,
+        price_usd: priceUsd ? parseInt(priceUsd) : null,
         area_sqm: areaSqm ? parseInt(areaSqm) : null,
         bedrooms: bedrooms ? parseInt(bedrooms) : null,
         description: description || null,
@@ -281,6 +324,7 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
                   <SelectItem value="villa">{lang.propertyTypes.villa}</SelectItem>
                   <SelectItem value="biet_thu">{lang.propertyTypes.biet_thu}</SelectItem>
                   <SelectItem value="can_ho_dich_vu">{lang.propertyTypes.can_ho_dich_vu}</SelectItem>
+                  <SelectItem value="chung_cu">{lang.propertyTypes.chung_cu}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -293,6 +337,7 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
                   <SelectItem value="renting">{lang.propertyStatuses.renting}</SelectItem>
                   <SelectItem value="sold">{lang.propertyStatuses.sold}</SelectItem>
                   <SelectItem value="rented">{lang.propertyStatuses.rented}</SelectItem>
+                  <SelectItem value="vacant">{lang.propertyStatuses.vacant}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -341,10 +386,14 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
         {/* Nhóm 3: Thông số & giá */}
         <div className="space-y-3 pt-4 border-t border-border">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{lang.form.groupSpecs}</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="space-y-1.5">
               <Label className="text-[10px]">{lang.form.priceLabel}</Label>
               <Input className="text-xs md:text-sm" type="number" value={price} onChange={(e) => setPrice(e.target.value)} placeholder={lang.form.pricePlaceholder} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-[10px]">{lang.form.priceUsdLabel}</Label>
+              <Input className="text-xs md:text-sm" type="number" value={priceUsd} onChange={(e) => setPriceUsd(e.target.value)} placeholder={lang.form.priceUsdPlaceholder} />
             </div>
             <div className="space-y-1.5">
               <Label className="text-[10px]">{lang.form.areaSqmLabel}</Label>
@@ -361,18 +410,30 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
         <div className="space-y-3 pt-4 border-t border-border">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{lang.form.descLabel}</h3>
           <textarea
+            ref={descRef}
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={(e) => {
+              setDescription(e.target.value)
+              const el = e.target
+              el.style.height = 'auto'
+              el.style.height = el.scrollHeight + 'px'
+            }}
             rows={4}
             placeholder={lang.form.descPlaceholder}
-            className="w-full rounded-lg border border-input bg-transparent dark:bg-input/30 px-2.5 py-2 text-xs md:text-sm transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 resize-none"
+            className="w-full rounded-lg border border-input bg-transparent dark:bg-input/30 px-2.5 py-2 text-xs md:text-sm transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 resize-none overflow-hidden"
           />
         </div>
       </div>
 
       {/* Images + Save */}
       <div className="space-y-4">
-      <div className="bg-card/60 backdrop-blur rounded-xl border border-border p-5 space-y-4">
+      <div
+        className={`bg-card/60 backdrop-blur rounded-xl border p-5 space-y-4 transition-colors ${isDragOver ? 'border-primary bg-primary/5' : 'border-border'}`}
+        onDragOver={(e) => { e.preventDefault(); if (!isDragOver) setIsDragOver(true) }}
+        onDragEnter={(e) => { e.preventDefault(); setIsDragOver(true) }}
+        onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setIsDragOver(false) }}
+        onDrop={handleExternalDrop}
+      >
         <div className="flex items-center justify-between">
           <h2 className="font-semibold text-foreground">
             {lang.form.sectionImages} <span className="text-muted-foreground font-normal text-sm">({lang.form.imageCount(items.length)})</span>
@@ -387,7 +448,7 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
         {items.length > 0 && (
           <>
             <p className="text-xs text-muted-foreground">
-              Kéo thả để sắp xếp — ảnh đầu tiên là ảnh bìa
+              Kéo thả để sắp xếp — ảnh đầu tiên là ảnh bìa · Thả file vào đây để thêm · <kbd className="bg-muted px-1 py-0.5 rounded text-[10px]">Ctrl+V</kbd> để dán
             </p>
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={items.map((i) => i.id)} strategy={rectSortingStrategy}>
@@ -410,6 +471,7 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
             <Upload size={24} className="mx-auto mb-2" />
             <p className="text-sm">{lang.form.uploadClickHint}</p>
             <p className="text-xs mt-1">{lang.form.uploadMultiHint}</p>
+            <p className="text-xs mt-1 opacity-60">Kéo nhiều file từ Explorer vào đây · hoặc <kbd className="bg-muted px-1 py-0.5 rounded text-[10px]">Ctrl+V</kbd> để dán</p>
           </button>
         )}
 
@@ -429,7 +491,7 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
         )}
       </div>
 
-      <Button type="submit" disabled={saving} className="w-full bg-orange-500 hover:bg-orange-600 text-white">
+      <Button type="submit" disabled={saving} className="w-full bg-orange-500 hover:bg-orange-600 text-white h-13 text-base">
         {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         {property ? lang.form.saveBtn : lang.form.createBtn}
       </Button>

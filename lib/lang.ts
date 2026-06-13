@@ -8,6 +8,7 @@ export const lang = {
     villa: 'Villa',
     biet_thu: 'Biệt thự',
     can_ho_dich_vu: 'Căn hộ dịch vụ',
+    chung_cu: 'Chung cư',
   } as Record<string, string>,
 
   propertyStatuses: {
@@ -15,6 +16,7 @@ export const lang = {
     renting: 'Đang cho thuê',
     sold: 'Đã bán',
     rented: 'Đã cho thuê',
+    vacant: 'Đang trống',
   } as Record<string, string>,
 
   home: {
@@ -36,6 +38,8 @@ export const lang = {
     typeLabel: 'Loại BĐS',
     typeAll: 'Tất cả',
     typeAllLong: 'Tất cả loại',
+    statusLabel: 'Trạng thái',
+    statusAll: 'Tất cả',
     dateLabel: 'Thời gian',
     dateAll: 'Tất cả',
     date7: '7 ngày qua',
@@ -93,6 +97,8 @@ export const lang = {
     addressPlaceholder: 'VD: 12 Nguyễn Huệ',
     priceLabel: 'Giá (VNĐ)',
     pricePlaceholder: 'VD: 5000000000',
+    priceUsdLabel: 'Giá (USD)',
+    priceUsdPlaceholder: 'VD: 200000',
     areaSqmLabel: 'Diện tích (m²)',
     areaSqmPlaceholder: 'VD: 200',
     bedroomsLabel: 'Số phòng ngủ',

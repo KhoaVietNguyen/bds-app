@@ -2,8 +2,8 @@ import { lang } from './lang'
 import type { CityKey } from './locations'
 
 export type { CityKey }
-export type PropertyType = 'villa' | 'biet_thu' | 'can_ho_dich_vu'
-export type PropertyStatus = 'selling' | 'renting' | 'sold' | 'rented'
+export type PropertyType = 'villa' | 'biet_thu' | 'can_ho_dich_vu' | 'chung_cu'
+export type PropertyStatus = 'selling' | 'renting' | 'sold' | 'rented' | 'vacant'
 
 export const PROPERTY_TYPE_LABELS: Record<PropertyType, string> = lang.propertyTypes as Record<PropertyType, string>
 export const PROPERTY_STATUS_LABELS: Record<PropertyStatus, string> = lang.propertyStatuses as Record<PropertyStatus, string>
@@ -25,6 +25,7 @@ export interface Property {
   district: string
   address: string | null
   price: number | null
+  price_usd: number | null
   area_sqm: number | null
   bedrooms: number | null
   description: string | null

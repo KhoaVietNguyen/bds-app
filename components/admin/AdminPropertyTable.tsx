@@ -4,7 +4,7 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useCallback, useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Property, PROPERTY_TYPE_LABELS, PROPERTY_STATUS_LABELS, PropertyType, CityKey } from '@/lib/types'
+import { Property, PROPERTY_TYPE_LABELS, PROPERTY_STATUS_LABELS, PropertyType, PropertyStatus, CityKey } from '@/lib/types'
 import { formatPrice } from '@/lib/format'
 import { formatLocation, CITY_OPTIONS, CITY_LABELS, DISTRICTS } from '@/lib/locations'
 import { createClient } from '@/lib/supabase/client'
@@ -22,6 +22,7 @@ const STATUS_COLORS = {
   renting: 'bg-blue-500/20 text-blue-600 dark:text-blue-400',
   sold: 'bg-red-500/20 text-red-600 dark:text-red-400',
   rented: 'bg-orange-500/20 text-orange-600 dark:text-orange-400',
+  vacant: 'bg-purple-500/20 text-purple-600 dark:text-purple-400',
 }
 
 export default function AdminPropertyTable({
@@ -29,7 +30,7 @@ export default function AdminPropertyTable({
   filters,
 }: {
   properties: Property[]
-  filters: { q?: string; city?: string; district?: string; type?: string; days?: string }
+  filters: { q?: string; city?: string; district?: string; type?: string; status?: string; days?: string }
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -37,6 +38,7 @@ export default function AdminPropertyTable({
   const [city, setCity] = useState(filters.city ?? '')
   const [district, setDistrict] = useState(filters.district ?? '')
   const [type, setType] = useState(filters.type ?? '')
+  const [status, setStatus] = useState(filters.status ?? '')
   const [days, setDays] = useState(filters.days ?? '')
   const [deleting, setDeleting] = useState<string | null>(null)
   const [showFilters, setShowFilters] = useState(false)
@@ -51,7 +53,7 @@ export default function AdminPropertyTable({
     return () => window.removeEventListener('scroll', onScroll)
   }, [showFilters])
 
-  const activeFilterCount = [city, district, type, days].filter(v => v && v !== 'all').length
+  const activeFilterCount = [city, district, type, status, days].filter(v => v && v !== 'all').length
 
   function handleCityChange(val: string | null) {
     const newCity = !val || val === 'all' ? '' : val
@@ -67,13 +69,14 @@ export default function AdminPropertyTable({
     if (city) params.set('city', city)
     if (district) params.set('district', district)
     if (type && type !== 'all') params.set('type', type)
+    if (status && status !== 'all') params.set('status', status)
     if (days && days !== 'all') params.set('days', days)
     startTransition(() => router.push(`${pathname}?${params.toString()}`))
     setShowFilters(false)
   }, [q, city, district, type, days, router, pathname])
 
   const clearFilters = useCallback(() => {
-    setQ(''); setCity(''); setDistrict(''); setType(''); setDays('')
+    setQ(''); setCity(''); setDistrict(''); setType(''); setStatus(''); setDays('')
     startTransition(() => router.push(pathname))
     setShowFilters(false)
   }, [router, pathname])
@@ -192,13 +195,30 @@ export default function AdminPropertyTable({
             <span className="text-[10px] md:text-xs text-muted-foreground px-1">{lang.search.typeLabel}</span>
             <Select value={type || 'all'} onValueChange={(v) => setType(v === 'all' ? '' : v as string)}>
               <SelectTrigger className="w-full h-8 text-xs md:h-9 md:text-sm">
-                {type && type !== 'all' ? ({ villa: lang.propertyTypes.villa, biet_thu: lang.propertyTypes.biet_thu, can_ho_dich_vu: lang.propertyTypes.can_ho_dich_vu } as Record<string, string>)[type] : 'Tất cả'}
+                {type && type !== 'all' ? ({ villa: lang.propertyTypes.villa, biet_thu: lang.propertyTypes.biet_thu, can_ho_dich_vu: lang.propertyTypes.can_ho_dich_vu, chung_cu: lang.propertyTypes.chung_cu } as Record<string, string>)[type] : 'Tất cả'}
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tất cả</SelectItem>
                 <SelectItem value="villa">{lang.propertyTypes.villa}</SelectItem>
                 <SelectItem value="biet_thu">{lang.propertyTypes.biet_thu}</SelectItem>
                 <SelectItem value="can_ho_dich_vu">{lang.propertyTypes.can_ho_dich_vu}</SelectItem>
+                <SelectItem value="chung_cu">{lang.propertyTypes.chung_cu}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+            <span className="text-[10px] md:text-xs text-muted-foreground px-1">{lang.search.statusLabel}</span>
+            <Select value={status || 'all'} onValueChange={(v) => setStatus(v === 'all' ? '' : v)}>
+              <SelectTrigger className="w-full h-8 text-xs md:h-9 md:text-sm">
+                {status && status !== 'all' ? lang.propertyStatuses[status as PropertyStatus] : 'Tất cả'}
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả</SelectItem>
+                <SelectItem value="selling">{lang.propertyStatuses.selling}</SelectItem>
+                <SelectItem value="renting">{lang.propertyStatuses.renting}</SelectItem>
+                <SelectItem value="sold">{lang.propertyStatuses.sold}</SelectItem>
+                <SelectItem value="rented">{lang.propertyStatuses.rented}</SelectItem>
+                <SelectItem value="vacant">{lang.propertyStatuses.vacant}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -241,13 +261,14 @@ export default function AdminPropertyTable({
                 <span className="text-[10px] md:text-xs text-muted-foreground px-1">{lang.search.typeLabel}</span>
                 <Select value={type || 'all'} onValueChange={(v) => setType(v === 'all' ? '' : v as string)}>
                   <SelectTrigger className="w-full h-8 text-xs md:h-9 md:text-sm">
-                    {type && type !== 'all' ? ({ villa: lang.propertyTypes.villa, biet_thu: lang.propertyTypes.biet_thu, can_ho_dich_vu: lang.propertyTypes.can_ho_dich_vu } as Record<string, string>)[type] : 'Tất cả'}
+                    {type && type !== 'all' ? ({ villa: lang.propertyTypes.villa, biet_thu: lang.propertyTypes.biet_thu, can_ho_dich_vu: lang.propertyTypes.can_ho_dich_vu, chung_cu: lang.propertyTypes.chung_cu } as Record<string, string>)[type] : 'Tất cả'}
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Tất cả</SelectItem>
                     <SelectItem value="villa">{lang.propertyTypes.villa}</SelectItem>
                     <SelectItem value="biet_thu">{lang.propertyTypes.biet_thu}</SelectItem>
                     <SelectItem value="can_ho_dich_vu">{lang.propertyTypes.can_ho_dich_vu}</SelectItem>
+                    <SelectItem value="chung_cu">{lang.propertyTypes.chung_cu}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -266,6 +287,22 @@ export default function AdminPropertyTable({
                 </Select>
               </div>
               <div className="flex flex-col gap-0.5">
+                <span className="text-[10px] md:text-xs text-muted-foreground px-1">{lang.search.statusLabel}</span>
+                <Select value={status || 'all'} onValueChange={(v) => setStatus(v === 'all' ? '' : v)}>
+                  <SelectTrigger className="w-full h-8 text-xs md:h-9 md:text-sm">
+                    {status && status !== 'all' ? lang.propertyStatuses[status as PropertyStatus] : 'Tất cả'}
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tất cả</SelectItem>
+                    <SelectItem value="selling">{lang.propertyStatuses.selling}</SelectItem>
+                    <SelectItem value="renting">{lang.propertyStatuses.renting}</SelectItem>
+                    <SelectItem value="sold">{lang.propertyStatuses.sold}</SelectItem>
+                    <SelectItem value="rented">{lang.propertyStatuses.rented}</SelectItem>
+                    <SelectItem value="vacant">{lang.propertyStatuses.vacant}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-0.5 col-span-2">
                 <span className="text-[10px] md:text-xs text-muted-foreground px-1">{lang.search.dateLabel}</span>
                 <Select value={days || 'all'} onValueChange={(v) => setDays(v === 'all' ? '' : (v ?? ''))}>
                   <SelectTrigger className="w-full h-8 text-xs md:h-9 md:text-sm">
@@ -343,7 +380,7 @@ export default function AdminPropertyTable({
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
-                        <Link href={`/bds/${p.id}`} target="_blank" rel="noopener noreferrer">
+                        <Link href={`/bds/${p.id}`} target="_blank" rel="noopener noreferrer" prefetch={false}>
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
                             <ExternalLink size={14} />
                           </Button>
@@ -398,7 +435,7 @@ export default function AdminPropertyTable({
                 </div>
                 {/* Action row */}
                 <div className="flex gap-2 mt-2.5">
-                  <Link href={`/bds/${p.id}`} target="_blank" rel="noopener noreferrer" className="flex-1">
+                  <Link href={`/bds/${p.id}`} target="_blank" rel="noopener noreferrer" className="flex-1" prefetch={false}>
                     <Button variant="ghost" size="sm" className="w-full h-8 text-muted-foreground hover:text-foreground border border-border text-xs gap-1.5">
                       <ExternalLink size={13} />
                       Xem

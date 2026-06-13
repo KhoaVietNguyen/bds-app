@@ -2,7 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Property, Profile, PROPERTY_TYPE_LABELS, PROPERTY_STATUS_LABELS } from '@/lib/types'
 import { lang } from '@/lib/lang'
-import { formatPrice } from '@/lib/format'
+import { formatPrice, formatPriceUsd } from '@/lib/format'
 import { formatLocation } from '@/lib/locations'
 import { MapPin, BedDouble, Maximize2, Images, Phone, UserRound } from 'lucide-react'
 
@@ -11,6 +11,7 @@ const STATUS_COLORS = {
   renting: 'bg-blue-500/80 text-white dark:text-white',
   sold: 'bg-red-500/80 text-white dark:text-white',
   rented: 'bg-orange-500/80 text-white dark:text-white',
+  vacant: 'bg-purple-500/80 text-white dark:text-white',
 }
 
 export default function PropertyCard({ property, profile }: { property: Property; profile?: Profile | null }) {
@@ -18,7 +19,7 @@ export default function PropertyCard({ property, profile }: { property: Property
   const cover = images[0]?.url
 
   return (
-    <Link href={`/bds/${property.id}`} className="group block">
+    <Link href={`/bds/${property.id}`} className="group block" prefetch={false}>
       <div className="bg-card rounded-lg overflow-hidden shadow-sm border border-border hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
         {/* Image */}
         <div className="relative aspect-video bg-muted overflow-hidden">
@@ -82,7 +83,12 @@ export default function PropertyCard({ property, profile }: { property: Property
           </div>
 
           <div className="mt-3 pt-3 border-t border-border flex items-center justify-between gap-2">
-            <p className="text-base font-bold text-orange-500">{formatPrice(property.price)}</p>
+            <div>
+              <p className="text-base font-bold text-orange-500">{formatPrice(property.price)}</p>
+              {property.price_usd && (
+                <p className="text-xs text-muted-foreground">{formatPriceUsd(property.price_usd)}</p>
+              )}
+            </div>
             {profile && (profile.avatar_url || profile.phone) && (
               <div className="flex items-center gap-1.5 min-w-0">
                 <div className="relative h-6 w-6 rounded-full overflow-hidden bg-muted border border-border shrink-0">
