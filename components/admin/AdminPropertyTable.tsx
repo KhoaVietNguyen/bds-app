@@ -208,7 +208,7 @@ export default function AdminPropertyTable({
           </div>
           <div className="flex flex-col gap-0.5 flex-1 min-w-0">
             <span className="text-[10px] md:text-xs text-muted-foreground px-1">{lang.search.statusLabel}</span>
-            <Select value={status || 'all'} onValueChange={(v) => setStatus(v === 'all' ? '' : v)}>
+            <Select value={status || 'all'} onValueChange={(v) => setStatus(v === 'all' ? '' : (v ?? ''))}>
               <SelectTrigger className="w-full h-8 text-xs md:h-9 md:text-sm">
                 {status && status !== 'all' ? lang.propertyStatuses[status as PropertyStatus] : 'Tất cả'}
               </SelectTrigger>
@@ -288,7 +288,7 @@ export default function AdminPropertyTable({
               </div>
               <div className="flex flex-col gap-0.5">
                 <span className="text-[10px] md:text-xs text-muted-foreground px-1">{lang.search.statusLabel}</span>
-                <Select value={status || 'all'} onValueChange={(v) => setStatus(v === 'all' ? '' : v)}>
+                <Select value={status || 'all'} onValueChange={(v) => setStatus(v === 'all' ? '' : (v ?? ''))}>
                   <SelectTrigger className="w-full h-8 text-xs md:h-9 md:text-sm">
                     {status && status !== 'all' ? lang.propertyStatuses[status as PropertyStatus] : 'Tất cả'}
                   </SelectTrigger>
