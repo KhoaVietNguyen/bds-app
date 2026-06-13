@@ -115,7 +115,7 @@ export default function ClientSearch({
   )
 
   const statusSelect = (
-    <Select value={status || 'all'} onValueChange={(v) => setStatus(v === 'all' ? '' : v)}>
+    <Select value={status || 'all'} onValueChange={(v) => setStatus(v === 'all' ? '' : (v ?? ''))}>
       <SelectTrigger className="bg-card/60 backdrop-blur border-border w-full h-8 text-xs md:h-9 md:text-sm">
         {status && status !== 'all' ? lang.propertyStatuses[status as PropertyStatus] : lang.search.statusAll}
       </SelectTrigger>
