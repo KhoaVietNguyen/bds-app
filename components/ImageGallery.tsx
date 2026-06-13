@@ -44,6 +44,7 @@ export default function ImageGallery({ images }: { images: PropertyImage[] }) {
                 sizes="(max-width: 768px) 100vw, 800px"
                 className="object-cover cursor-zoom-in"
                 priority={i === 0}
+                loading={i === 0 ? undefined : 'lazy'}
                 onClick={() => openLightbox(i)}
               />
               <button
