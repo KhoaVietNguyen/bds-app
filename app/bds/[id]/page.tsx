@@ -81,11 +81,11 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
                 <span className={`text-white text-lg font-bold px-5 py-1 rounded-md ${statusColor}`}>
                   {statusLabel}
                 </span>
-                <span className={`text-xs text-white font-bold px-2 py-1 rounded-md ${typeBg}`}>
+                <span className={`text-white text-lg font-bold px-5 py-1 rounded-md ${typeBg}`}>
                   {typeLabels[property.type] ?? property.type}
                 </span>
-                <span className="font-mono text-xs bg-primary/10 text-primary px-2 py-1 rounded font-bold flex items-center gap-1">
-                  <Hash size={11} />
+                <span className="font-mono text-lg bg-primary/10 text-primary px-5 py-1 rounded-md font-bold flex items-center gap-1">
+                  <Hash size={16} />
                   {property.id}
                 </span>
               </div>
