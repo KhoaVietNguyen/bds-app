@@ -9,14 +9,19 @@ export function AdminThemeSync() {
   useEffect(() => {
     function sync() {
       const dark = document.documentElement.classList.contains('dark')
-      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? ADMIN_DARK : ADMIN_LIGHT)
+      const color = dark ? ADMIN_DARK : ADMIN_LIGHT
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', color)
+      document.body.style.backgroundColor = color
     }
 
     sync()
 
     const mo = new MutationObserver(sync)
     mo.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
-    return () => mo.disconnect()
+    return () => {
+      mo.disconnect()
+      document.body.style.backgroundColor = ''
+    }
   }, [])
 
   return null
