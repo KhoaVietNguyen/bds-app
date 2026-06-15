@@ -92,9 +92,9 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
 
               <div className="border-t border-b py-2 flex items-end justify-between gap-3">
                 <div>
-                  <p className="text-2xl font-bold text-primary">{formatPrice(property.price)} <span className="text-sm font-normal text-muted-foreground">VNĐ</span></p>
+                  <p className="text-2xl font-bold text-orange-500">{formatPrice(property.price)}</p>
                   {property.price_usd && (
-                    <p className="text-sm text-muted-foreground">{formatPriceUsd(property.price_usd)} USD</p>
+                    <p className="text-sm text-muted-foreground">{formatPriceUsd(property.price_usd)}</p>
                   )}
                 </div>
               </div>
