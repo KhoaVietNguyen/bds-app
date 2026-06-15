@@ -13,7 +13,6 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { lang } from '@/lib/lang'
 import { revalidateProperties } from '@/lib/actions'
-import ThemeToggle from '@/components/ThemeToggle'
 import { useConfig } from '@/components/ConfigContext'
 import { Pencil, Trash2, Search, ExternalLink, SlidersHorizontal, X, Loader2 } from 'lucide-react'
 import PriceRangeSlider from '@/components/PriceRangeSlider'
@@ -46,6 +45,7 @@ export default function AdminPropertyTable({
   const [deleting, setDeleting] = useState<string | null>(null)
   const [showFilters, setShowFilters] = useState(false)
   const scrollAnchorRef = useRef(0)
+
   // Đang mở panel filter mà scroll thật sự (quá 24px) thì tự đóng
   useEffect(() => {
     if (!showFilters) return
@@ -110,7 +110,7 @@ export default function AdminPropertyTable({
   }
 
   const priceFilterUI = (
-    <div className="flex-1 min-w-55 max-w-xs px-1">
+    <div className="min-w-0 px-1">
       <PriceRangeSlider
         pmin={pmin} pmax={pmax} cur={cur} sliderMax={sliderMax}
         onPminChange={setPmin} onPmaxChange={setPmax} onCurChange={setCur} onSliderMaxChange={setSliderMax}
@@ -121,18 +121,18 @@ export default function AdminPropertyTable({
   const coverImage = (p: Property) =>
     p.property_images?.sort((a, b) => a.order_index - b.order_index)[0]?.url
 
+  const countBadgeProps = (properties?.length ?? 0) > 0 ? getStatusColor('selling') : getStatusColor('sold')
+
   return (
-    <div className="space-y-3">
-      {/* Filters — sticky trên cùng khi scroll */}
-      <div className="sticky top-0 z-20 bg-card/50 backdrop-blur-md overflow-hidden -mx-4 -mt-4 px-1 pt-1 border-b border-border md:mx-0 md:mt-0 md:px-0 md:pt-0 md:top-4 md:rounded-xl md:border md:bg-card/90">
+    <div>
+      {/* Filters — sticky full-width header */}
+      <div className="sticky top-0 z-20 bg-card/50 backdrop-blur-md border-b border-border -mx-4 -mt-4 md:-mx-6 md:-mt-6 lg:-mx-8 lg:-mt-8">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
         {/* Search row — always visible */}
-        <div className="relative space-y-1 text-center items-center content-center py-1">
-          <span className="absolute left-2 top-1/2 -translate-y-1/2 md:hidden">
-            <ThemeToggle />
-          </span>
+        <div className="relative flex items-center justify-center py-2">
           <h1 className="text-2xl font-bold text-foreground">{lang.admin.pageTitle}</h1>
         </div>
-        <div className='flex gap-2 p-1 px-3'>
+        <div className='flex gap-2 pb-2'>
           <Input
             placeholder={lang.search.queryPlaceholder}
             value={q}
@@ -178,14 +178,8 @@ export default function AdminPropertyTable({
           
         </div>
 
-        <p className="pl-3 pb-2">
-          <span className={`inline-block text-xs px-2 py-0.5 rounded-md font-bold ${(properties?.length ?? 0) > 0 ? getStatusColor('selling') : getStatusColor('sold')}`}>
-            {lang.admin.propertyCount(properties?.length ?? 0)}
-          </span>
-        </p>
-
-        {/* Desktop: all filters in one row */}
-        <div className="hidden md:flex gap-2 px-3 pb-3 items-end">
+        {/* Desktop: row 1 — Thành phố, Quận/Huyện, Loại BĐS */}
+        <div className="hidden md:flex gap-2 pb-2 items-end">
           <div className="flex flex-col gap-0.5 flex-1 min-w-0">
             <span className="text-[10px] md:text-xs text-muted-foreground px-1">{lang.search.cityLabel}</span>
             <Select value={city || 'all'} onValueChange={handleCityChange}>
@@ -226,7 +220,10 @@ export default function AdminPropertyTable({
               </SelectContent>
             </Select>
           </div>
-          <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+        </div>
+        {/* Desktop: row 2 — Trạng thái, Thời gian, Price filter */}
+        <div className="hidden md:flex gap-2 pb-3 items-end">
+          <div className="flex flex-col gap-0.5 min-w-36 w-48">
             <span className="text-[10px] md:text-xs text-muted-foreground px-1">{lang.search.statusLabel}</span>
             <Select value={status || 'all'} onValueChange={(v) => setStatus(v === 'all' ? '' : (v ?? ''))}>
               <SelectTrigger className="w-full h-8 text-xs md:h-9 md:text-sm">
@@ -238,7 +235,7 @@ export default function AdminPropertyTable({
               </SelectContent>
             </Select>
           </div>
-          <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+          <div className="flex flex-col gap-0.5 min-w-36 w-48">
             <span className="text-[10px] md:text-xs text-muted-foreground px-1">{lang.search.dateLabel}</span>
             <Select value={days || 'all'} onValueChange={(v) => setDays(v === 'all' ? '' : (v ?? ''))}>
               <SelectTrigger className="w-full h-8 text-xs md:h-9 md:text-sm">
@@ -253,7 +250,10 @@ export default function AdminPropertyTable({
               </SelectContent>
             </Select>
           </div>
-          {priceFilterUI}
+          <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+            <span className="text-[10px] md:text-xs text-muted-foreground px-1">Giá</span>
+            {priceFilterUI}
+          </div>
         </div>
 
         {/* Mobile: collapsible filter panel */}
@@ -348,15 +348,22 @@ export default function AdminPropertyTable({
             </div>
           </div>
         )}
-      </div>
+        </div>{/* end max-w-7xl inner */}
+      </div>{/* end sticky header */}
 
       {/* Table / Cards */}
+      <div className="max-w-7xl mx-auto space-y-3 pt-3">
+      <p>
+        <span className={`inline-block text-xs px-2 py-0.5 rounded-md font-bold ${countBadgeProps.className}`} style={countBadgeProps.style}>
+          {lang.admin.propertyCount(properties?.length ?? 0)}
+        </span>
+      </p>
       {properties.length === 0 ? (
-        <div className="bg-card/80 backdrop-blur rounded-xl border border-border p-12 text-center text-muted-foreground">
+        <div className="bg-card/50 backdrop-blur-md rounded-xl border border-border p-12 text-center text-muted-foreground">
           {lang.admin.table.empty} <Link href="/admin/new" className="text-primary underline">{lang.admin.addBtn}</Link>
         </div>
       ) : (
-        <div className="bg-card/80 backdrop-blur rounded-xl border border-border overflow-hidden">
+        <div className="bg-card/50 backdrop-blur-md rounded-xl border border-border overflow-hidden">
           {/* Desktop table */}
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm">
@@ -376,18 +383,18 @@ export default function AdminPropertyTable({
                 {properties.map((p) => (
                   <tr key={p.id} className="hover:bg-muted/30 transition-colors">
                     <td className="px-4 py-3">
-                      <div className="w-28 h-20 rounded-lg overflow-hidden bg-muted">
+                      <Link href={`/admin/${p.id}/edit`} className="block w-28 h-20 rounded-lg overflow-hidden bg-muted hover:ring-2 hover:ring-orange-500 transition-all">
                         {coverImage(p) ? (
                           <Image src={coverImage(p)!} alt={p.name} width={112} height={80} className="object-cover w-full h-full" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">{lang.property.noImage}</div>
                         )}
-                      </div>
+                      </Link>
                     </td>
                     <td className="px-4 py-3 font-mono text-primary font-medium">{p.id}</td>
                     <td className="px-4 py-3 font-medium text-foreground max-w-[200px]">{p.name}</td>
                     <td className="px-4 py-3">
-                      <span className={`inline-block px-2.5 py-1 rounded-md text-sm font-bold text-white ${getTypeBadge(p.type)}`}>
+                      <span className={`inline-block px-2.5 py-1 rounded-md text-sm font-bold text-white ${getTypeBadge(p.type).className}`} style={getTypeBadge(p.type).style}>
                         {typeLabels[p.type] ?? p.type}
                       </span>
                     </td>
@@ -406,7 +413,7 @@ export default function AdminPropertyTable({
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`inline-block px-2.5 py-1 rounded-md text-sm font-bold text-white ${getStatusBadge(p.status)}`}>
+                      <span className={`inline-block px-2.5 py-1 rounded-md text-sm font-bold text-white ${getStatusBadge(p.status).className}`} style={getStatusBadge(p.status).style}>
                         {statusLabels[p.status] ?? p.status}
                       </span>
                     </td>
@@ -457,10 +464,10 @@ export default function AdminPropertyTable({
                     <div className="flex items-start justify-between gap-1">
                       <p className="font-mono text-xs text-primary font-medium leading-tight">{p.id}</p>
                       <div className="flex items-center gap-1 shrink-0">
-                        <span className={`px-1.5 py-0.5 rounded text-[11px] font-bold text-white ${getTypeBadge(p.type)}`}>
+                        <span className={`px-1.5 py-0.5 rounded text-[11px] font-bold text-white ${getTypeBadge(p.type).className}`} style={getTypeBadge(p.type).style}>
                           {typeLabels[p.type] ?? p.type}
                         </span>
-                        <span className={`px-1.5 py-0.5 rounded text-[11px] font-bold text-white ${getStatusBadge(p.status)}`}>
+                        <span className={`px-1.5 py-0.5 rounded text-[11px] font-bold text-white ${getStatusBadge(p.status).className}`} style={getStatusBadge(p.status).style}>
                           {statusLabels[p.status] ?? p.status}
                         </span>
                       </div>
@@ -510,6 +517,7 @@ export default function AdminPropertyTable({
           </div>
         </div>
       )}
+      </div>{/* end content max-w-7xl */}
     </div>
   )
 }

@@ -1,9 +1,13 @@
+import type { CSSProperties } from 'react'
+
 export interface ConfigItem {
   value: string
   label: string
   color?: string | null
   order_index: number
 }
+
+export type BadgeProps = { className: string; style?: CSSProperties }
 
 export const STATUS_COLOR_CLASSES: Record<string, string> = {
   green:  'bg-green-500/20 text-green-600 dark:text-green-400',
@@ -15,10 +19,6 @@ export const STATUS_COLOR_CLASSES: Record<string, string> = {
   cyan:   'bg-cyan-500/20 text-cyan-600 dark:text-cyan-400',
   pink:   'bg-pink-500/20 text-pink-600 dark:text-pink-400',
   gray:   'bg-gray-500/20 text-gray-600 dark:text-gray-400',
-}
-
-export function getStatusColorClass(color?: string | null): string {
-  return STATUS_COLOR_CLASSES[color ?? ''] ?? STATUS_COLOR_CLASSES.gray
 }
 
 export const STATUS_BADGE_BG: Record<string, string> = {
@@ -33,8 +33,26 @@ export const STATUS_BADGE_BG: Record<string, string> = {
   gray:   'bg-gray-500',
 }
 
+function isHex(c?: string | null): c is string {
+  return !!c && c.startsWith('#')
+}
+
+export function getSolidBadgeProps(color?: string | null): BadgeProps {
+  if (isHex(color)) return { className: '', style: { backgroundColor: color } }
+  return { className: STATUS_BADGE_BG[color ?? ''] ?? STATUS_BADGE_BG.gray }
+}
+
+export function getSoftBadgeProps(color?: string | null): BadgeProps {
+  if (isHex(color)) return { className: '', style: { backgroundColor: color + '33', color } }
+  return { className: STATUS_COLOR_CLASSES[color ?? ''] ?? STATUS_COLOR_CLASSES.gray }
+}
+
+// Legacy — kept for any direct class-only usage
+export function getStatusColorClass(color?: string | null): string {
+  return getSoftBadgeProps(color).className
+}
 export function getStatusBadgeSolid(color?: string | null): string {
-  return STATUS_BADGE_BG[color ?? ''] ?? STATUS_BADGE_BG.gray
+  return getSolidBadgeProps(color).className
 }
 
 export function toLabelsMap(items: ConfigItem[]): Record<string, string> {

@@ -5,7 +5,7 @@ import { lang } from '@/lib/lang'
 import { formatPrice, formatPriceUsd } from '@/lib/format'
 import { formatLocation } from '@/lib/locations'
 import type { ConfigItem } from '@/lib/config'
-import { getStatusBadgeSolid } from '@/lib/config'
+import { getSolidBadgeProps } from '@/lib/config'
 import { MapPin, BedDouble, Maximize2, Images, Phone, UserRound } from 'lucide-react'
 
 export default function PropertyCard({
@@ -23,9 +23,9 @@ export default function PropertyCard({
 }) {
   const statusItem = statuses.find(s => s.value === property.status)
   const statusLabel = statusItem?.label ?? property.status
-  const statusBadgeClass = getStatusBadgeSolid(statusItem?.color)
+  const statusBadgeProps = getSolidBadgeProps(statusItem?.color)
   const typeItem = types.find(t => t.value === property.type)
-  const typeBadgeClass = getStatusBadgeSolid(typeItem?.color)
+  const typeBadgeProps = getSolidBadgeProps(typeItem?.color)
   const images = property.property_images?.sort((a, b) => a.order_index - b.order_index) ?? []
   const cover = images[0]?.url
 
@@ -49,7 +49,7 @@ export default function PropertyCard({
           )}
           {/* Status badge */}
           <div className="absolute top-3 left-3 flex gap-2">
-            <span className={`text-white text-sm px-2 py-0.5 rounded-md font-bold ${statusBadgeClass}`}>
+            <span className={`text-white text-sm px-2 py-0.5 rounded-md font-bold ${statusBadgeProps.className}`} style={statusBadgeProps.style}>
               {statusLabel}
             </span>
           </div>
@@ -61,7 +61,7 @@ export default function PropertyCard({
             </div>
           )}
           {/* Type badge */}
-          <div className={`absolute top-3 right-3 text-white text-sm px-2 py-0.5 rounded-md font-bold ${typeBadgeClass}`}>
+          <div className={`absolute top-3 right-3 text-white text-sm px-2 py-0.5 rounded-md font-bold ${typeBadgeProps.className}`} style={typeBadgeProps.style}>
             {typeLabels[property.type] ?? property.type}
           </div>
         </div>

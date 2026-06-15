@@ -14,6 +14,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/u
 import { lang } from '@/lib/lang'
 import { revalidateProperties } from '@/lib/actions'
 import { useConfig } from '@/components/ConfigContext'
+import { STATUS_BADGE_BG } from '@/lib/config'
+
+const isHex = (v?: string | null) => !!v && v.startsWith('#')
+function ColorDot({ color }: { color?: string | null }) {
+  if (!color) return null
+  return isHex(color)
+    ? <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+    : <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${STATUS_BADGE_BG[color] ?? 'bg-gray-500'}`} />
+}
 import { Loader2, Upload, X, GripVertical } from 'lucide-react'
 import { toast } from 'sonner'
 import {
@@ -114,6 +123,12 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
   const [address, setAddress] = useState(property?.address ?? '')
   const [price, setPrice] = useState(property?.price?.toString() ?? '')
   const [priceUsd, setPriceUsd] = useState(property?.price_usd?.toString() ?? '')
+
+  const fmtNumber = (v: string) => {
+    const n = parseInt(v.replace(/\D/g, ''), 10)
+    return isNaN(n) ? '' : n.toLocaleString('de-DE')
+  }
+  const parseNumber = (v: string) => v.replace(/\D/g, '')
   const [areaSqm, setAreaSqm] = useState(property?.area_sqm?.toString() ?? '')
   const [bedrooms, setBedrooms] = useState(property?.bedrooms?.toString() ?? '')
   const [description, setDescription] = useState(property?.description ?? '')
@@ -329,18 +344,42 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
             <div className="space-y-1.5">
               <Label className="text-[10px]">{lang.form.typeLabel}</Label>
               <Select value={type} onValueChange={(v) => setType(v as PropertyType)}>
-                <SelectTrigger className="w-full text-xs md:text-sm">{types.find(t => t.value === type)?.label ?? type}</SelectTrigger>
+                <SelectTrigger className="w-full text-xs md:text-sm">
+                  <span className="flex items-center gap-1.5">
+                    <ColorDot color={types.find(t => t.value === type)?.color} />
+                    {types.find(t => t.value === type)?.label ?? type}
+                  </span>
+                </SelectTrigger>
                 <SelectContent>
-                  {types.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                  {types.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>
+                      <span className="flex items-center gap-1.5">
+                        <ColorDot color={t.color} />
+                        {t.label}
+                      </span>
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
               <Label className="text-[10px]">{lang.form.statusLabel}</Label>
               <Select value={status} onValueChange={(v) => setStatus(v as PropertyStatus)}>
-                <SelectTrigger className="w-full text-xs md:text-sm">{statuses.find(s => s.value === status)?.label ?? status}</SelectTrigger>
+                <SelectTrigger className="w-full text-xs md:text-sm">
+                  <span className="flex items-center gap-1.5">
+                    <ColorDot color={statuses.find(s => s.value === status)?.color} />
+                    {statuses.find(s => s.value === status)?.label ?? status}
+                  </span>
+                </SelectTrigger>
                 <SelectContent>
-                  {statuses.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                  {statuses.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>
+                      <span className="flex items-center gap-1.5">
+                        <ColorDot color={s.color} />
+                        {s.label}
+                      </span>
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -392,11 +431,11 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label className="text-[10px]">{lang.form.priceLabel}</Label>
-              <Input className="text-xs md:text-sm" type="number" value={price} onChange={(e) => setPrice(e.target.value)} placeholder={lang.form.pricePlaceholder} />
+              <Input className="text-xs md:text-sm" inputMode="numeric" value={fmtNumber(price)} onChange={(e) => setPrice(parseNumber(e.target.value))} placeholder={lang.form.pricePlaceholder} />
             </div>
             <div className="space-y-1.5">
               <Label className="text-[10px]">{lang.form.priceUsdLabel}</Label>
-              <Input className="text-xs md:text-sm" type="number" value={priceUsd} onChange={(e) => setPriceUsd(e.target.value)} placeholder={lang.form.priceUsdPlaceholder} />
+              <Input className="text-xs md:text-sm" inputMode="numeric" value={fmtNumber(priceUsd)} onChange={(e) => setPriceUsd(parseNumber(e.target.value))} placeholder={lang.form.priceUsdPlaceholder} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">

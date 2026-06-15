@@ -125,9 +125,9 @@ export default function PriceRangeSlider({
       <div className="flex items-center gap-1.5 min-w-0">
         <div className="flex rounded-md overflow-hidden border border-border text-xs h-7 shrink-0">
           <button type="button" onClick={() => handleCurChange('vnd')}
-            className={`px-2 font-semibold transition-colors ${cur === 'vnd' ? 'bg-orange-500 text-white' : 'bg-card/60 text-muted-foreground hover:bg-muted'}`}>₫</button>
+            className={`px-2 font-semibold transition-colors ${cur === 'vnd' ? 'bg-orange-500 text-white' : 'bg-card/60 text-muted-foreground hover:bg-muted'}`}>VNĐ</button>
           <button type="button" onClick={() => handleCurChange('usd')}
-            className={`px-2 font-semibold transition-colors ${cur === 'usd' ? 'bg-emerald-500 text-white' : 'bg-card/60 text-muted-foreground hover:bg-muted'}`}>$</button>
+            className={`px-2 font-semibold transition-colors ${cur === 'usd' ? 'bg-emerald-500 text-white' : 'bg-card/60 text-muted-foreground hover:bg-muted'}`}>USD</button>
         </div>
 
         <div className="flex items-center gap-1 overflow-x-auto scrollbar-none flex-1 min-w-0">

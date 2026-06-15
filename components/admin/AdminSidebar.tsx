@@ -51,20 +51,25 @@ export default function AdminSidebar({ userEmail }: { userEmail: string }) {
         </AnimatePresence>
 
         <div className="fixed left-4 z-50 flex flex-col-reverse items-start gap-3 bottom-[max(1.25rem,env(safe-area-inset-bottom))]">
-          {/* FAB chính */}
-          <motion.button
-            onClick={() => setOpen((v) => !v)}
-            whileTap={{ scale: 0.88 }}
-            className="h-14 w-14 rounded-full bg-orange-500 text-white shadow-xl shadow-orange-500/30 flex items-center justify-center"
-          >
-            <motion.span
-              animate={{ rotate: open ? 180 : 0 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-              className="flex items-center justify-center"
+          {/* FAB row: menu + theme toggle */}
+          <div className="flex items-center gap-3">
+            <motion.button
+              onClick={() => setOpen((v) => !v)}
+              whileTap={{ scale: 0.88 }}
+              className="h-14 w-14 rounded-full bg-orange-500 text-white shadow-xl shadow-orange-500/30 flex items-center justify-center"
             >
-              {open ? <X size={24} /> : <Menu size={24} />}
-            </motion.span>
-          </motion.button>
+              <motion.span
+                animate={{ rotate: open ? 180 : 0 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                className="flex items-center justify-center"
+              >
+                {open ? <X size={24} /> : <Menu size={24} />}
+              </motion.span>
+            </motion.button>
+            <div className="h-14 w-14 rounded-full bg-card/90 backdrop-blur-md border border-border shadow-xl shadow-black/10 flex items-center justify-center">
+              <ThemeToggle />
+            </div>
+          </div>
 
           {/* Options bung lên trên */}
           <AnimatePresence>
@@ -82,23 +87,24 @@ export default function AdminSidebar({ userEmail }: { userEmail: string }) {
                       opacity: 0, y: 14, scale: 0.5,
                       transition: { delay: (visibleNav.length - i) * 0.04, duration: 0.12 },
                     }}
-                    className="flex items-center gap-2.5"
                   >
                     <Link
                       href={href}
                       onClick={() => setOpen(false)}
-                      className={cn(
+                      className="flex items-center gap-2.5"
+                    >
+                      <div className={cn(
                         'h-11 w-11 rounded-full flex items-center justify-center shadow-lg border',
                         pathname === href
                           ? 'bg-orange-500 text-white border-orange-400'
                           : 'bg-card text-foreground border-border'
-                      )}
-                    >
-                      <Icon size={19} />
+                      )}>
+                        <Icon size={19} />
+                      </div>
+                      <span className="bg-card/95 backdrop-blur text-foreground text-xs font-medium px-2.5 py-1.5 rounded-full border border-border shadow-sm">
+                        {label}
+                      </span>
                     </Link>
-                    <span className="bg-card/95 backdrop-blur text-foreground text-xs font-medium px-2.5 py-1.5 rounded-full border border-border shadow-sm">
-                      {label}
-                    </span>
                   </motion.div>
                 ))}
 
@@ -110,17 +116,15 @@ export default function AdminSidebar({ userEmail }: { userEmail: string }) {
                     transition: { delay: visibleNav.length * 0.06, type: 'spring', stiffness: 450, damping: 26 },
                   }}
                   exit={{ opacity: 0, y: 14, scale: 0.5, transition: { duration: 0.12 } }}
-                  className="flex items-center gap-2.5"
                 >
-                  <button
-                    onClick={handleLogout}
-                    className="h-11 w-11 rounded-full flex items-center justify-center shadow-lg bg-card text-red-500 border border-red-500/30"
-                  >
-                    <LogOut size={19} />
+                  <button type="button" onClick={handleLogout} className="flex items-center gap-2.5">
+                    <div className="h-11 w-11 rounded-full flex items-center justify-center shadow-lg bg-card text-red-500 border border-red-500/30">
+                      <LogOut size={19} />
+                    </div>
+                    <span className="bg-card/95 backdrop-blur text-red-500 text-xs font-medium px-2.5 py-1.5 rounded-full border border-red-500/30 shadow-sm">
+                      {lang.admin.logout}
+                    </span>
                   </button>
-                  <span className="bg-card/95 backdrop-blur text-red-500 text-xs font-medium px-2.5 py-1.5 rounded-full border border-red-500/30 shadow-sm">
-                    {lang.admin.logout}
-                  </span>
                 </motion.div>
               </div>
             )}

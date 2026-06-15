@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import { getPropertyDetail, getPropertyTypes, getPropertyStatuses } from '@/lib/data'
-import { toLabelsMap, getStatusBadgeSolid } from '@/lib/config'
+import { toLabelsMap, getSolidBadgeProps } from '@/lib/config'
 import Link from 'next/link'
 import { CityKey } from '@/lib/types'
 import { lang } from '@/lib/lang'
@@ -37,10 +37,10 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
 
   const typeLabels = toLabelsMap(propertyTypes)
   const typeItem = propertyTypes.find(t => t.value === property.type)
-  const typeBg = getStatusBadgeSolid(typeItem?.color)
+  const typeBgProps = getSolidBadgeProps(typeItem?.color)
   const statusItem = propertyStatuses.find(s => s.value === property.status)
   const statusLabel = statusItem?.label ?? property.status
-  const statusColor = getStatusBadgeSolid(statusItem?.color)
+  const statusColorProps = getSolidBadgeProps(statusItem?.color)
   const shareDescription = `${typeLabels[property.type] ?? property.type} tại ${formatLocation(property.district, property.city as CityKey)} - ${formatPrice(property.price)}`
 
   return (
@@ -71,26 +71,26 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
         <div id="property-info-card" className="bg-card rounded-2xl p-5 space-y-4 shadow-sm border border-border">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1">
-              <div className="flex items-center gap-2 flex-wrap mb-2">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <span className="font-mono text-sm bg-primary/10 text-primary px-3 py-0.5 rounded-md font-bold flex items-center gap-1">
+                  <Hash size={13} />
+                  {property.id}
+                </span>
                 <p className="text-xs font-bold text-muted-foreground shrink-0">
                   {lang.property.postedDate}: {formatDate(property.created_at)}
                 </p>
               </div>
 
               <div className="flex items-center gap-2 flex-wrap mb-2">
-                <span className={`text-white text-lg font-bold px-5 py-1 rounded-md ${statusColor}`}>
+                <span className={`text-white text-lg font-bold px-5 py-1 rounded-md ${statusColorProps.className}`} style={statusColorProps.style}>
                   {statusLabel}
                 </span>
-                <span className={`text-white text-lg font-bold px-5 py-1 rounded-md ${typeBg}`}>
+                <span className={`text-white text-lg font-bold px-5 py-1 rounded-md ${typeBgProps.className}`} style={typeBgProps.style}>
                   {typeLabels[property.type] ?? property.type}
-                </span>
-                <span className="font-mono text-lg bg-primary/10 text-primary px-5 py-1 rounded-md font-bold flex items-center gap-1">
-                  <Hash size={16} />
-                  {property.id}
                 </span>
               </div>
 
-              <div className="border-t border-b py-2 flex items-end justify-between gap-3">
+              <div className="border-t border-b py-3 flex items-end justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {property.price && (

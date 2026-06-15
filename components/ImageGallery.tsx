@@ -44,7 +44,7 @@ export default function ImageGallery({ images }: { images: PropertyImage[] }) {
   return (
     <>
       {/* Main carousel */}
-      <div className="relative overflow-hidden rounded-lg" ref={emblaRef}>
+      <div className="relative overflow-hidden rounded-lg border border-border" ref={emblaRef}>
         <div className="flex touch-pan-y">
           {sorted.map((img, i) => (
             <div key={img.id} className="flex-[0_0_100%] min-w-0 relative aspect-video bg-slate-100">

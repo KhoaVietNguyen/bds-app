@@ -1,26 +1,27 @@
 'use client'
 
 import { createContext, useContext, useMemo } from 'react'
-import type { ConfigItem } from '@/lib/config'
-import { getStatusColorClass, getStatusBadgeSolid } from '@/lib/config'
+import type { ConfigItem, BadgeProps } from '@/lib/config'
+import { getSoftBadgeProps, getSolidBadgeProps } from '@/lib/config'
 
 interface ConfigValue {
   types: ConfigItem[]
   statuses: ConfigItem[]
   typeLabels: Record<string, string>
   statusLabels: Record<string, string>
-  getStatusColor: (value: string) => string
-  getStatusBadge: (value: string) => string
-  getTypeBadge: (value: string) => string
+  getStatusColor: (value: string) => BadgeProps
+  getStatusBadge: (value: string) => BadgeProps
+  getTypeBadge: (value: string) => BadgeProps
 }
 
-const DEFAULT_BADGE = 'bg-gray-500'
+const DEFAULT_SOFT: BadgeProps = { className: 'bg-gray-500/20 text-gray-600 dark:text-gray-400' }
+const DEFAULT_SOLID: BadgeProps = { className: 'bg-gray-500' }
 
 const ConfigCtx = createContext<ConfigValue>({
   types: [], statuses: [], typeLabels: {}, statusLabels: {},
-  getStatusColor: () => 'bg-gray-500/20 text-gray-600 dark:text-gray-400',
-  getStatusBadge: () => DEFAULT_BADGE,
-  getTypeBadge:   () => DEFAULT_BADGE,
+  getStatusColor: () => DEFAULT_SOFT,
+  getStatusBadge: () => DEFAULT_SOLID,
+  getTypeBadge:   () => DEFAULT_SOLID,
 })
 
 export function ConfigContextProvider({ types, statuses, children }: {
@@ -31,17 +32,17 @@ export function ConfigContextProvider({ types, statuses, children }: {
   const value = useMemo(() => {
     const typeLabels = Object.fromEntries(types.map(t => [t.value, t.label]))
     const statusLabels = Object.fromEntries(statuses.map(s => [s.value, s.label]))
-    const statusColorMap = Object.fromEntries(statuses.map(s => [s.value, getStatusColorClass(s.color)]))
-    const statusBadgeMap = Object.fromEntries(statuses.map(s => [s.value, getStatusBadgeSolid(s.color)]))
-    const typeBadgeMap = Object.fromEntries(types.map(t => [t.value, getStatusBadgeSolid(t.color)]))
+    const statusColorMap = Object.fromEntries(statuses.map(s => [s.value, getSoftBadgeProps(s.color)]))
+    const statusBadgeMap = Object.fromEntries(statuses.map(s => [s.value, getSolidBadgeProps(s.color)]))
+    const typeBadgeMap = Object.fromEntries(types.map(t => [t.value, getSolidBadgeProps(t.color)]))
     return {
       types,
       statuses,
       typeLabels,
       statusLabels,
-      getStatusColor: (v: string) => statusColorMap[v] ?? getStatusColorClass(null),
-      getStatusBadge: (v: string) => statusBadgeMap[v] ?? DEFAULT_BADGE,
-      getTypeBadge: (v: string) => typeBadgeMap[v] ?? DEFAULT_BADGE,
+      getStatusColor: (v: string) => statusColorMap[v] ?? DEFAULT_SOFT,
+      getStatusBadge: (v: string) => statusBadgeMap[v] ?? DEFAULT_SOLID,
+      getTypeBadge: (v: string) => typeBadgeMap[v] ?? DEFAULT_SOLID,
     }
   }, [types, statuses])
 

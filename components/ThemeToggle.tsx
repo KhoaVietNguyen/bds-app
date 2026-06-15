@@ -12,6 +12,7 @@ export default function ThemeToggle() {
     const dark = stored ? stored === 'dark' : true
     setIsDark(dark)
     document.documentElement.classList.toggle('dark', dark)
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#171717' : '#ffffff')
   }, [])
 
   function toggle() {
