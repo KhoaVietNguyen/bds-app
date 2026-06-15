@@ -10,14 +10,12 @@ function getThemeColor(dark: boolean) {
   return isAdmin ? '#fdba74' : '#ffffff'
 }
 
-// iOS Safari thường phớt lờ khi chỉ đổi content của thẻ meta đang tồn tại.
-// Xoá thẳng thẻ cũ rồi tạo thẻ mới buộc nó đọc lại theme-color.
-function setThemeColor(color: string) {
-  document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.remove())
-  const meta = document.createElement('meta')
-  meta.setAttribute('name', 'theme-color')
-  meta.setAttribute('content', color)
-  document.head.appendChild(meta)
+// Với viewport-fit=cover, vùng safe area trên cùng (sau notch) được tô bằng
+// background của <html>. Set thẳng nền html theo màu theme để safe area đổi
+// màu trên iOS Safari. Đồng thời update thẻ theme-color cho phần chrome.
+function applyThemeColor(color: string) {
+  document.documentElement.style.backgroundColor = color
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', color)
 }
 
 export default function ThemeToggle() {
@@ -28,7 +26,7 @@ export default function ThemeToggle() {
     const dark = stored ? stored === 'dark' : true
     setIsDark(dark)
     document.documentElement.classList.toggle('dark', dark)
-    setThemeColor(getThemeColor(dark))
+    applyThemeColor(getThemeColor(dark))
   }, [])
 
   function toggle() {
@@ -36,7 +34,7 @@ export default function ThemeToggle() {
     setIsDark(next)
     document.documentElement.classList.toggle('dark', next)
     localStorage.setItem('theme', next ? 'dark' : 'light')
-    setThemeColor(getThemeColor(next))
+    applyThemeColor(getThemeColor(next))
   }
 
   return (
