@@ -3,5 +3,5 @@
 import { revalidateTag } from 'next/cache'
 
 export async function revalidateConfig() {
-  revalidateTag('property-config')
+  revalidateTag('property-config', 'max')
 }
