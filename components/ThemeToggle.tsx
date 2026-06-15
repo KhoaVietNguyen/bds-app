@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useLayoutEffect, useState } from 'react'
 import { Moon, Sun } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -13,7 +13,7 @@ function getThemeColor(dark: boolean) {
 export default function ThemeToggle() {
   const [isDark, setIsDark] = useState(true)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const stored = localStorage.getItem('theme')
     const dark = stored ? stored === 'dark' : true
     setIsDark(dark)
