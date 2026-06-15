@@ -3,7 +3,6 @@ import { redirect } from 'next/navigation'
 import AdminSidebar from '@/components/admin/AdminSidebar'
 import { ConfigContextProvider } from '@/components/ConfigContext'
 import { getPropertyTypes, getPropertyStatuses } from '@/lib/data'
-import { AdminThemeSync } from '@/components/admin/AdminThemeSync'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -17,7 +16,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <ConfigContextProvider types={types} statuses={statuses}>
-      <AdminThemeSync />
       <div className="min-h-screen flex relative isolate bg-orange-300 dark:bg-zinc-950">
         <div className="fixed top-0 left-0 w-screen h-screen z-0 pointer-events-none bg-linear-to-br from-orange-300 via-orange-100 to-amber-200 dark:from-zinc-950 dark:via-orange-950/60 dark:to-black" />
         <div className="relative z-30">
