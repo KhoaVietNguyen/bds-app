@@ -4,6 +4,12 @@ import { useEffect, useState } from 'react'
 import { Moon, Sun } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
+function getThemeColor(dark: boolean) {
+  const isAdmin = typeof location !== 'undefined' && location.pathname.startsWith('/admin')
+  if (dark) return isAdmin ? '#09090b' : '#171717'
+  return isAdmin ? '#fdba74' : '#ffffff'
+}
+
 export default function ThemeToggle() {
   const [isDark, setIsDark] = useState(true)
 
@@ -12,6 +18,7 @@ export default function ThemeToggle() {
     const dark = stored ? stored === 'dark' : true
     setIsDark(dark)
     document.documentElement.classList.toggle('dark', dark)
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', getThemeColor(dark))
   }, [])
 
   function toggle() {
@@ -19,7 +26,7 @@ export default function ThemeToggle() {
     setIsDark(next)
     document.documentElement.classList.toggle('dark', next)
     localStorage.setItem('theme', next ? 'dark' : 'light')
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', next ? '#171717' : '#ffffff')
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', getThemeColor(next))
   }
 
   return (
