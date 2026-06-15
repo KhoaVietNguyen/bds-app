@@ -10,12 +10,17 @@ function getThemeColor(dark: boolean) {
   return isAdmin ? '#fdba74' : '#ffffff'
 }
 
-// Với viewport-fit=cover, vùng safe area trên cùng (sau notch) được tô bằng
-// background của <html>. Set thẳng nền html theo màu theme để safe area đổi
-// màu trên iOS Safari. Đồng thời update thẻ theme-color cho phần chrome.
+// Vùng safe area sau notch lấy màu từ background của <body> (body có class
+// bg-background phủ kín, đè lên <html>). Set nền cả html và body theo theme.
+// Đồng thời xoá + tạo lại thẻ theme-color để ép iOS Safari re-sample khi toggle.
 function applyThemeColor(color: string) {
   document.documentElement.style.backgroundColor = color
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', color)
+  document.body.style.backgroundColor = color
+  document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.remove())
+  const meta = document.createElement('meta')
+  meta.setAttribute('name', 'theme-color')
+  meta.setAttribute('content', color)
+  document.head.appendChild(meta)
 }
 
 export default function ThemeToggle() {
