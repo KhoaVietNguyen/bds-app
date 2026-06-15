@@ -92,10 +92,17 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
 
               <div className="border-t border-b py-2 flex items-end justify-between gap-3">
                 <div>
-                  <p className="text-2xl font-bold text-orange-500">{formatPrice(property.price)}</p>
-                  {property.price_usd && (
-                    <p className="text-sm text-muted-foreground">{formatPriceUsd(property.price_usd)}</p>
-                  )}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {property.price && (
+                      <span className="inline-flex items-center text-2xl font-bold text-orange-500 bg-orange-500/10 px-2 py-0.5 rounded">{formatPrice(property.price)}</span>
+                    )}
+                    {property.price_usd && (
+                      <span className="inline-flex items-center text-2xl font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">{formatPriceUsd(property.price_usd)}</span>
+                    )}
+                    {!property.price && !property.price_usd && (
+                      <span className="inline-flex items-center text-2xl font-bold text-orange-500 bg-orange-500/10 px-2 py-0.5 rounded">Liên hệ</span>
+                    )}
+                  </div>
                 </div>
               </div>
               <h1 className="text-xl pt-2 font-bold text-foreground leading-snug">{property.name}</h1>
