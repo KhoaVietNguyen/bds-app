@@ -2,7 +2,7 @@ import { lang } from './lang'
 import type { CityKey } from './locations'
 
 export type { CityKey }
-export type PropertyType = 'villa' | 'biet_thu' | 'can_ho_dich_vu' | 'chung_cu'
+export type PropertyType = 'villa' | 'biet_thu' | 'can_ho_dich_vu' | 'chung_cu' | 'penthouse'
 export type PropertyStatus = 'selling' | 'renting' | 'sold' | 'rented' | 'vacant'
 
 export const PROPERTY_TYPE_LABELS: Record<PropertyType, string> = lang.propertyTypes as Record<PropertyType, string>

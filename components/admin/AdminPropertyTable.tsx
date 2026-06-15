@@ -1,59 +1,67 @@
 'use client'
 
-import { useRouter, useSearchParams, usePathname } from 'next/navigation'
-import { useCallback, useEffect, useState, useTransition } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
+import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Property, PROPERTY_TYPE_LABELS, PROPERTY_STATUS_LABELS, PropertyType, PropertyStatus, CityKey } from '@/lib/types'
-import { formatPrice } from '@/lib/format'
+import { Property, CityKey } from '@/lib/types'
+import { formatPrice, formatPriceUsd } from '@/lib/format'
 import { formatLocation, CITY_OPTIONS, CITY_LABELS, DISTRICTS } from '@/lib/locations'
 import { createClient } from '@/lib/supabase/client'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { lang } from '@/lib/lang'
+import { revalidateProperties } from '@/lib/actions'
 import ThemeToggle from '@/components/ThemeToggle'
-import { cn } from '@/lib/utils'
+import { useConfig } from '@/components/ConfigContext'
 import { Pencil, Trash2, Search, ExternalLink, SlidersHorizontal, X, Loader2 } from 'lucide-react'
+import PriceRangeSlider from '@/components/PriceRangeSlider'
 import { toast } from 'sonner'
-
-const STATUS_COLORS = {
-  selling: 'bg-green-500/20 text-green-600 dark:text-green-400',
-  renting: 'bg-blue-500/20 text-blue-600 dark:text-blue-400',
-  sold: 'bg-red-500/20 text-red-600 dark:text-red-400',
-  rented: 'bg-orange-500/20 text-orange-600 dark:text-orange-400',
-  vacant: 'bg-purple-500/20 text-purple-600 dark:text-purple-400',
-}
 
 export default function AdminPropertyTable({
   properties,
   filters,
 }: {
   properties: Property[]
-  filters: { q?: string; city?: string; district?: string; type?: string; status?: string; days?: string }
+  filters: { q?: string; city?: string; district?: string; type?: string; status?: string; days?: string; pmin?: string; pmax?: string; cur?: string }
 }) {
   const router = useRouter()
   const pathname = usePathname()
+  const { types, statuses, typeLabels, statusLabels, getStatusColor, getStatusBadge, getTypeBadge } = useConfig()
   const [q, setQ] = useState(filters.q ?? '')
   const [city, setCity] = useState(filters.city ?? '')
   const [district, setDistrict] = useState(filters.district ?? '')
   const [type, setType] = useState(filters.type ?? '')
   const [status, setStatus] = useState(filters.status ?? '')
   const [days, setDays] = useState(filters.days ?? '')
+  const [pmin, setPmin] = useState(filters.pmin ?? '')
+  const [pmax, setPmax] = useState(filters.pmax ?? '')
+  const [cur, setCur] = useState<'vnd' | 'usd'>(filters.cur === 'usd' ? 'usd' : 'vnd')
+  const [sliderMax, setSliderMax] = useState<number | null>(() => {
+    if (filters.pmax) return parseFloat(filters.pmax) || null
+    if (filters.pmin) return parseFloat(filters.pmin) * 2 || null
+    return null
+  })
   const [deleting, setDeleting] = useState<string | null>(null)
   const [showFilters, setShowFilters] = useState(false)
+  const scrollAnchorRef = useRef(0)
   // Đang mở panel filter mà scroll thật sự (quá 24px) thì tự đóng
   useEffect(() => {
     if (!showFilters) return
-    const startY = window.scrollY
+    scrollAnchorRef.current = window.scrollY
     const onScroll = () => {
-      if (Math.abs(window.scrollY - startY) > 24) setShowFilters(false)
+      if (Math.abs(window.scrollY - scrollAnchorRef.current) > 24) setShowFilters(false)
     }
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [showFilters])
+  // Re-anchor sau khi panel mở rộng (slider xuất hiện làm trang bị đẩy)
+  useEffect(() => {
+    if (showFilters) scrollAnchorRef.current = window.scrollY
+  }, [sliderMax])
 
-  const activeFilterCount = [city, district, type, status, days].filter(v => v && v !== 'all').length
+  const activeFilterCount = [city, district, type, status, days, pmin, pmax].filter(v => v && v !== 'all').length + (sliderMax ? 1 : 0)
 
   function handleCityChange(val: string | null) {
     const newCity = !val || val === 'all' ? '' : val
@@ -71,12 +79,17 @@ export default function AdminPropertyTable({
     if (type && type !== 'all') params.set('type', type)
     if (status && status !== 'all') params.set('status', status)
     if (days && days !== 'all') params.set('days', days)
+    const effectivePmax = pmax || (sliderMax ? String(sliderMax) : '')
+    if (pmin) params.set('pmin', pmin)
+    if (effectivePmax) params.set('pmax', effectivePmax)
+    if ((pmin || effectivePmax) && cur === 'usd') params.set('cur', 'usd')
     startTransition(() => router.push(`${pathname}?${params.toString()}`))
     setShowFilters(false)
-  }, [q, city, district, type, days, router, pathname])
+  }, [q, city, district, type, status, days, pmin, pmax, cur, sliderMax, router, pathname])
 
   const clearFilters = useCallback(() => {
     setQ(''); setCity(''); setDistrict(''); setType(''); setStatus(''); setDays('')
+    setPmin(''); setPmax(''); setCur('vnd'); setSliderMax(null)
     startTransition(() => router.push(pathname))
     setShowFilters(false)
   }, [router, pathname])
@@ -90,10 +103,20 @@ export default function AdminPropertyTable({
       toast.error(lang.admin.table.deleteError + ' ' + error.message)
     } else {
       toast.success(lang.admin.table.deleteSuccess(id))
+      await revalidateProperties()
       router.refresh()
     }
     setDeleting(null)
   }
+
+  const priceFilterUI = (
+    <div className="flex-1 min-w-55 max-w-xs px-1">
+      <PriceRangeSlider
+        pmin={pmin} pmax={pmax} cur={cur} sliderMax={sliderMax}
+        onPminChange={setPmin} onPmaxChange={setPmax} onCurChange={setCur} onSliderMaxChange={setSliderMax}
+      />
+    </div>
+  )
 
   const coverImage = (p: Property) =>
     p.property_images?.sort((a, b) => a.order_index - b.order_index)[0]?.url
@@ -156,7 +179,7 @@ export default function AdminPropertyTable({
         </div>
 
         <p className="pl-3 pb-2">
-          <span className={`inline-block text-xs px-2 py-0.5 rounded-md font-bold ${(properties?.length ?? 0) > 0 ? STATUS_COLORS.selling : STATUS_COLORS.sold}`}>
+          <span className={`inline-block text-xs px-2 py-0.5 rounded-md font-bold ${(properties?.length ?? 0) > 0 ? getStatusColor('selling') : getStatusColor('sold')}`}>
             {lang.admin.propertyCount(properties?.length ?? 0)}
           </span>
         </p>
@@ -195,14 +218,11 @@ export default function AdminPropertyTable({
             <span className="text-[10px] md:text-xs text-muted-foreground px-1">{lang.search.typeLabel}</span>
             <Select value={type || 'all'} onValueChange={(v) => setType(v === 'all' ? '' : v as string)}>
               <SelectTrigger className="w-full h-8 text-xs md:h-9 md:text-sm">
-                {type && type !== 'all' ? ({ villa: lang.propertyTypes.villa, biet_thu: lang.propertyTypes.biet_thu, can_ho_dich_vu: lang.propertyTypes.can_ho_dich_vu, chung_cu: lang.propertyTypes.chung_cu } as Record<string, string>)[type] : 'Tất cả'}
+                {type && type !== 'all' ? (typeLabels[type] ?? type) : 'Tất cả'}
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tất cả</SelectItem>
-                <SelectItem value="villa">{lang.propertyTypes.villa}</SelectItem>
-                <SelectItem value="biet_thu">{lang.propertyTypes.biet_thu}</SelectItem>
-                <SelectItem value="can_ho_dich_vu">{lang.propertyTypes.can_ho_dich_vu}</SelectItem>
-                <SelectItem value="chung_cu">{lang.propertyTypes.chung_cu}</SelectItem>
+                {types.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -210,15 +230,11 @@ export default function AdminPropertyTable({
             <span className="text-[10px] md:text-xs text-muted-foreground px-1">{lang.search.statusLabel}</span>
             <Select value={status || 'all'} onValueChange={(v) => setStatus(v === 'all' ? '' : (v ?? ''))}>
               <SelectTrigger className="w-full h-8 text-xs md:h-9 md:text-sm">
-                {status && status !== 'all' ? lang.propertyStatuses[status as PropertyStatus] : 'Tất cả'}
+                {status && status !== 'all' ? (statusLabels[status] ?? status) : 'Tất cả'}
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tất cả</SelectItem>
-                <SelectItem value="selling">{lang.propertyStatuses.selling}</SelectItem>
-                <SelectItem value="renting">{lang.propertyStatuses.renting}</SelectItem>
-                <SelectItem value="sold">{lang.propertyStatuses.sold}</SelectItem>
-                <SelectItem value="rented">{lang.propertyStatuses.rented}</SelectItem>
-                <SelectItem value="vacant">{lang.propertyStatuses.vacant}</SelectItem>
+                {statuses.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -237,6 +253,7 @@ export default function AdminPropertyTable({
               </SelectContent>
             </Select>
           </div>
+          {priceFilterUI}
         </div>
 
         {/* Mobile: collapsible filter panel */}
@@ -261,14 +278,11 @@ export default function AdminPropertyTable({
                 <span className="text-[10px] md:text-xs text-muted-foreground px-1">{lang.search.typeLabel}</span>
                 <Select value={type || 'all'} onValueChange={(v) => setType(v === 'all' ? '' : v as string)}>
                   <SelectTrigger className="w-full h-8 text-xs md:h-9 md:text-sm">
-                    {type && type !== 'all' ? ({ villa: lang.propertyTypes.villa, biet_thu: lang.propertyTypes.biet_thu, can_ho_dich_vu: lang.propertyTypes.can_ho_dich_vu, chung_cu: lang.propertyTypes.chung_cu } as Record<string, string>)[type] : 'Tất cả'}
+                    {type && type !== 'all' ? (typeLabels[type] ?? type) : 'Tất cả'}
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Tất cả</SelectItem>
-                    <SelectItem value="villa">{lang.propertyTypes.villa}</SelectItem>
-                    <SelectItem value="biet_thu">{lang.propertyTypes.biet_thu}</SelectItem>
-                    <SelectItem value="can_ho_dich_vu">{lang.propertyTypes.can_ho_dich_vu}</SelectItem>
-                    <SelectItem value="chung_cu">{lang.propertyTypes.chung_cu}</SelectItem>
+                    {types.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -290,15 +304,11 @@ export default function AdminPropertyTable({
                 <span className="text-[10px] md:text-xs text-muted-foreground px-1">{lang.search.statusLabel}</span>
                 <Select value={status || 'all'} onValueChange={(v) => setStatus(v === 'all' ? '' : (v ?? ''))}>
                   <SelectTrigger className="w-full h-8 text-xs md:h-9 md:text-sm">
-                    {status && status !== 'all' ? lang.propertyStatuses[status as PropertyStatus] : 'Tất cả'}
+                    {status && status !== 'all' ? (statusLabels[status] ?? status) : 'Tất cả'}
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Tất cả</SelectItem>
-                    <SelectItem value="selling">{lang.propertyStatuses.selling}</SelectItem>
-                    <SelectItem value="renting">{lang.propertyStatuses.renting}</SelectItem>
-                    <SelectItem value="sold">{lang.propertyStatuses.sold}</SelectItem>
-                    <SelectItem value="rented">{lang.propertyStatuses.rented}</SelectItem>
-                    <SelectItem value="vacant">{lang.propertyStatuses.vacant}</SelectItem>
+                    {statuses.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -316,6 +326,12 @@ export default function AdminPropertyTable({
                     <SelectItem value="180">{lang.search.date180}</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="col-span-2">
+                <PriceRangeSlider
+                  pmin={pmin} pmax={pmax} cur={cur} sliderMax={sliderMax}
+                  onPminChange={setPmin} onPmaxChange={setPmax} onCurChange={setCur} onSliderMaxChange={setSliderMax}
+                />
               </div>
             </div>
             <div className="flex gap-2">
@@ -360,22 +376,38 @@ export default function AdminPropertyTable({
                 {properties.map((p) => (
                   <tr key={p.id} className="hover:bg-muted/30 transition-colors">
                     <td className="px-4 py-3">
-                      <div className="w-14 h-10 rounded-lg overflow-hidden bg-muted">
+                      <div className="w-28 h-20 rounded-lg overflow-hidden bg-muted">
                         {coverImage(p) ? (
-                          <Image src={coverImage(p)!} alt={p.name} width={56} height={40} className="object-cover w-full h-full" />
+                          <Image src={coverImage(p)!} alt={p.name} width={112} height={80} className="object-cover w-full h-full" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">{lang.property.noImage}</div>
                         )}
                       </div>
                     </td>
                     <td className="px-4 py-3 font-mono text-primary font-medium">{p.id}</td>
-                    <td className="px-4 py-3 font-medium text-foreground max-w-[200px] truncate">{p.name}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{PROPERTY_TYPE_LABELS[p.type]}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{formatLocation(p.district, p.city)}</td>
-                    <td className="px-4 py-3 text-foreground font-medium">{formatPrice(p.price)}</td>
+                    <td className="px-4 py-3 font-medium text-foreground max-w-[200px]">{p.name}</td>
                     <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[p.status]}`}>
-                        {PROPERTY_STATUS_LABELS[p.status]}
+                      <span className={`inline-block px-2.5 py-1 rounded-md text-sm font-bold text-white ${getTypeBadge(p.type)}`}>
+                        {typeLabels[p.type] ?? p.type}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">{formatLocation(p.district, p.city)}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-col gap-0.5">
+                        {p.price && (
+                          <span className="inline-flex items-center text-base font-bold text-orange-500 bg-orange-500/10 px-1.5 py-0.5 rounded">{formatPrice(p.price)}</span>
+                        )}
+                        {p.price_usd && (
+                          <span className="inline-flex items-center text-base font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">{formatPriceUsd(p.price_usd)}</span>
+                        )}
+                        {!p.price && !p.price_usd && (
+                          <span className="inline-flex items-center text-base font-bold text-orange-500 bg-orange-500/10 px-1.5 py-0.5 rounded">Liên hệ</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-block px-2.5 py-1 rounded-md text-sm font-bold text-white ${getStatusBadge(p.status)}`}>
+                        {statusLabels[p.status] ?? p.status}
                       </span>
                     </td>
                     <td className="px-4 py-3">
@@ -413,7 +445,7 @@ export default function AdminPropertyTable({
               <div key={p.id} className="p-3">
                 <div className="flex gap-3">
                   {/* Image */}
-                  <div className="w-24 h-18 rounded-lg overflow-hidden bg-muted shrink-0" style={{ height: '72px' }}>
+                  <div className="w-24 h-18 rounded-lg overflow-hidden bg-muted shrink-0">
                     {coverImage(p) ? (
                       <Image src={coverImage(p)!} alt={p.name} width={96} height={72} className="object-cover w-full h-full" />
                     ) : (
@@ -424,13 +456,28 @@ export default function AdminPropertyTable({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-1">
                       <p className="font-mono text-xs text-primary font-medium leading-tight">{p.id}</p>
-                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium shrink-0 ${STATUS_COLORS[p.status]}`}>
-                        {PROPERTY_STATUS_LABELS[p.status]}
-                      </span>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <span className={`px-1.5 py-0.5 rounded text-[11px] font-bold text-white ${getTypeBadge(p.type)}`}>
+                          {typeLabels[p.type] ?? p.type}
+                        </span>
+                        <span className={`px-1.5 py-0.5 rounded text-[11px] font-bold text-white ${getStatusBadge(p.status)}`}>
+                          {statusLabels[p.status] ?? p.status}
+                        </span>
+                      </div>
                     </div>
-                    <p className="font-semibold text-foreground text-sm truncate mt-0.5">{p.name}</p>
-                    <p className="text-xs text-muted-foreground truncate">{PROPERTY_TYPE_LABELS[p.type]} · {formatLocation(p.district, p.city)}</p>
-                    <p className="text-sm font-bold text-primary mt-1">{formatPrice(p.price)}</p>
+                    <p className="font-semibold text-foreground text-sm mt-0.5">{p.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{formatLocation(p.district, p.city)}</p>
+                    <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                      {p.price && (
+                        <span className="inline-flex items-center text-sm font-bold text-orange-500 bg-orange-500/10 px-1.5 py-0.5 rounded">{formatPrice(p.price)}</span>
+                      )}
+                      {p.price_usd && (
+                        <span className="inline-flex items-center text-sm font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">{formatPriceUsd(p.price_usd)}</span>
+                      )}
+                      {!p.price && !p.price_usd && (
+                        <span className="inline-flex items-center text-sm font-bold text-orange-500 bg-orange-500/10 px-1.5 py-0.5 rounded">Liên hệ</span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 {/* Action row */}

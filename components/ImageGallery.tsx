@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import Image from 'next/image'
 import useEmblaCarousel from 'embla-carousel-react'
 import { PropertyImage } from '@/lib/types'
@@ -9,17 +9,28 @@ import { ChevronLeft, ChevronRight, X, ZoomIn } from 'lucide-react'
 export default function ImageGallery({ images }: { images: PropertyImage[] }) {
   const sorted = [...images].sort((a, b) => a.order_index - b.order_index)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+  const [activeIndex, setActiveIndex] = useState(0)
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true })
   const [lightboxRef, lightboxApi] = useEmblaCarousel({ loop: true })
+
+  useEffect(() => {
+    if (!emblaApi) return
+    emblaApi.on('select', () => setActiveIndex(emblaApi.selectedScrollSnap()))
+  }, [emblaApi])
 
   const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi])
   const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi])
   const lightboxPrev = useCallback(() => lightboxApi?.scrollPrev(), [lightboxApi])
   const lightboxNext = useCallback(() => lightboxApi?.scrollNext(), [lightboxApi])
 
+  useEffect(() => {
+    if (lightboxIndex !== null && lightboxApi) {
+      lightboxApi.scrollTo(lightboxIndex, true)
+    }
+  }, [lightboxIndex, lightboxApi])
+
   const openLightbox = (index: number) => {
     setLightboxIndex(index)
-    setTimeout(() => lightboxApi?.scrollTo(index, true), 50)
   }
 
   if (sorted.length === 0) {
@@ -47,12 +58,16 @@ export default function ImageGallery({ images }: { images: PropertyImage[] }) {
                 loading={i === 0 ? undefined : 'lazy'}
                 onClick={() => openLightbox(i)}
               />
-              <button
-                onClick={() => openLightbox(i)}
-                className="absolute bottom-3 right-3 bg-black/40 text-white rounded-full p-1.5 hover:bg-black/60 transition-colors"
-              >
-                <ZoomIn size={16} />
-              </button>
+              {i === activeIndex && (
+                <button
+                  type="button"
+                  aria-label="Xem ảnh lớn"
+                  onClick={() => openLightbox(i)}
+                  className="absolute bottom-3 right-3 bg-black/40 text-white rounded-full p-1.5 hover:bg-black/60 transition-colors"
+                >
+                  <ZoomIn size={16} />
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -92,42 +107,47 @@ export default function ImageGallery({ images }: { images: PropertyImage[] }) {
 
       {/* Lightbox */}
       {lightboxIndex !== null && (
-        <div className="fixed inset-0 bg-black/95 z-50 flex flex-col">
-          <div className="flex items-center justify-between p-4">
-            <span className="text-white text-sm opacity-70">{sorted.length} ảnh</span>
+        <div className="fixed top-0 left-0 w-screen h-screen bg-black/70 backdrop-blur-md z-9999 flex flex-col">
+          {/* Top bar */}
+          <div className="flex items-center justify-between px-4 py-2 shrink-0">
+            <span className="text-white/50 text-sm tabular-nums">
+              {(lightboxApi?.selectedScrollSnap() ?? lightboxIndex) + 1} / {sorted.length}
+            </span>
             <button
               onClick={() => setLightboxIndex(null)}
-              className="text-white hover:text-slate-300 p-2"
+              className="text-white/70 hover:text-white p-2 -mr-2"
             >
-              <X size={24} />
+              <X size={22} />
             </button>
           </div>
 
-          <div className="flex-1 overflow-hidden" ref={lightboxRef}>
+          {/* Images — fill remaining height */}
+          <div className="flex-1 min-h-0 overflow-hidden relative" ref={lightboxRef}>
             <div className="flex h-full touch-pan-y">
               {sorted.map((img, i) => (
-                <div key={img.id} className="flex-[0_0_100%] min-w-0 flex items-center justify-center p-4">
-                  <div className="relative w-full h-full max-h-[75vh]">
-                    <Image
-                      src={img.url}
-                      alt={`Ảnh ${i + 1}`}
-                      fill
-                      sizes="100vw"
-                      className="object-contain"
-                    />
-                  </div>
+                <div key={img.id} className="flex-[0_0_100%] min-w-0 h-full relative">
+                  <Image
+                    src={img.url}
+                    alt={`Ảnh ${i + 1}`}
+                    fill
+                    sizes="100vw"
+                    className="object-contain"
+                  />
                 </div>
               ))}
             </div>
-          </div>
 
-          <div className="flex justify-center gap-4 p-4">
-            <button onClick={lightboxPrev} className="text-white bg-white/20 rounded-full p-2 hover:bg-white/30">
-              <ChevronLeft size={24} />
-            </button>
-            <button onClick={lightboxNext} className="text-white bg-white/20 rounded-full p-2 hover:bg-white/30">
-              <ChevronRight size={24} />
-            </button>
+            {/* Side nav arrows */}
+            {sorted.length > 1 && (
+              <>
+                <button type="button" aria-label="Ảnh trước" onClick={lightboxPrev} className="absolute left-2 top-1/2 -translate-y-1/2 text-white bg-orange-500/70 backdrop-blur-sm hover:bg-orange-500/90 rounded-full p-2 transition-colors">
+                  <ChevronLeft size={22} />
+                </button>
+                <button type="button" aria-label="Ảnh tiếp" onClick={lightboxNext} className="absolute right-2 top-1/2 -translate-y-1/2 text-white bg-orange-500/70 backdrop-blur-sm hover:bg-orange-500/90 rounded-full p-2 transition-colors">
+                  <ChevronRight size={22} />
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}

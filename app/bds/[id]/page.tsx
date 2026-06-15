@@ -1,8 +1,8 @@
-import { unstable_cache } from 'next/cache'
-import { createBrowserClient } from '@supabase/ssr'
 import { notFound } from 'next/navigation'
+import { getPropertyDetail, getPropertyTypes, getPropertyStatuses } from '@/lib/data'
+import { toLabelsMap, getStatusBadgeSolid } from '@/lib/config'
 import Link from 'next/link'
-import { PROPERTY_TYPE_LABELS, PROPERTY_STATUS_LABELS, CityKey } from '@/lib/types'
+import { CityKey } from '@/lib/types'
 import { lang } from '@/lib/lang'
 import { formatPrice, formatPriceUsd, formatDate } from '@/lib/format'
 import { formatLocation } from '@/lib/locations'
@@ -14,53 +14,34 @@ import ThemeToggle from '@/components/ThemeToggle'
 import { Building2, MapPin, BedDouble, Maximize2, ChevronLeft, Hash } from 'lucide-react'
 import type { Metadata } from 'next'
 
-function getSupabase() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-}
-
-const getPropertyDetail = unstable_cache(
-  async (id: string) => {
-    const supabase = getSupabase()
-    const [{ data: property }, { data: images }, { data: profile }] = await Promise.all([
-      supabase.from('properties').select('*').eq('id', id).single(),
-      supabase.from('property_images').select('*').eq('property_id', id).order('order_index'),
-      supabase.from('profile').select('*').eq('id', 1).single(),
-    ])
-    return { property, images: images ?? [], profile }
-  },
-  ['property-detail'],
-  { revalidate: 60, tags: ['property-detail'] }
-)
-
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params
-  const { property } = await getPropertyDetail(id)
+  const [{ property }, types] = await Promise.all([getPropertyDetail(id), getPropertyTypes()])
   if (!property) return { title: lang.property.notFound }
+  const typeLabels = toLabelsMap(types)
   return {
     title: `${property.name} | ${lang.app.name}`,
-    description: `${PROPERTY_TYPE_LABELS[property.type as keyof typeof PROPERTY_TYPE_LABELS]} tại ${formatLocation(property.district, property.city as CityKey)}`,
+    description: `${typeLabels[property.type] ?? property.type} tại ${formatLocation(property.district, property.city as CityKey)}`,
   }
-}
-
-const STATUS_COLORS = {
-  selling: 'bg-green-500/20 text-green-600 dark:text-green-400',
-  renting: 'bg-blue-500/20 text-blue-600 dark:text-blue-400',
-  sold: 'bg-red-500/20 text-red-600 dark:text-red-400',
-  rented: 'bg-orange-500/20 text-orange-600 dark:text-orange-400',
-  vacant: 'bg-purple-500/20 text-purple-600 dark:text-purple-400',
 }
 
 export default async function PropertyDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const { property, images, profile } = await getPropertyDetail(id)
+  const [{ property, images, profile }, propertyTypes, propertyStatuses] = await Promise.all([
+    getPropertyDetail(id),
+    getPropertyTypes(),
+    getPropertyStatuses(),
+  ])
 
   if (!property) notFound()
 
-  const sortedImages = images
-  const shareDescription = `${PROPERTY_TYPE_LABELS[property.type as keyof typeof PROPERTY_TYPE_LABELS]} tại ${formatLocation(property.district, property.city as CityKey)} - ${formatPrice(property.price)}`
+  const typeLabels = toLabelsMap(propertyTypes)
+  const typeItem = propertyTypes.find(t => t.value === property.type)
+  const typeBg = getStatusBadgeSolid(typeItem?.color)
+  const statusItem = propertyStatuses.find(s => s.value === property.status)
+  const statusLabel = statusItem?.label ?? property.status
+  const statusColor = getStatusBadgeSolid(statusItem?.color)
+  const shareDescription = `${typeLabels[property.type] ?? property.type} tại ${formatLocation(property.district, property.city as CityKey)} - ${formatPrice(property.price)}`
 
   return (
     <div className="min-h-screen bg-background">
@@ -75,8 +56,8 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
           </div>
           <span className="font-bold text-foreground flex-1"></span>
           <ShareButton title={property.name} description={shareDescription} compact />
-          {sortedImages.length > 0 && (
-            <DownloadButton images={sortedImages} propertyId={property.id} compact />
+          {images.length > 0 && (
+            <DownloadButton images={images} propertyId={property.id} compact />
           )}
           <ThemeToggle />
         </div>
@@ -84,31 +65,31 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
 
       <main className="max-w-3xl mx-auto px-4 py-5 space-y-5 pb-28">
         {/* Gallery */}
-        <ImageGallery images={sortedImages as any} />
+        <ImageGallery images={images as any} />
 
         {/* Info card */}
         <div id="property-info-card" className="bg-card rounded-2xl p-5 space-y-4 shadow-sm border border-border">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1">
               <div className="flex items-center gap-2 flex-wrap mb-2">
-                 <p className="text-xs font-bold text-muted-foreground shrink-0">
+                <p className="text-xs font-bold text-muted-foreground shrink-0">
                   {lang.property.postedDate}: {formatDate(property.created_at)}
                 </p>
               </div>
-              
+
               <div className="flex items-center gap-2 flex-wrap mb-2">
-                <span className={`text-lg font-bold px-5 py-1 rounded ${STATUS_COLORS[property.status as keyof typeof STATUS_COLORS]}`}>
-                  {PROPERTY_STATUS_LABELS[property.status as keyof typeof PROPERTY_STATUS_LABELS]}
+                <span className={`text-white text-lg font-bold px-5 py-1 rounded-md ${statusColor}`}>
+                  {statusLabel}
                 </span>
-                 <span className="text-xs bg-orange-500/80 text-white font-bold px-2 py-1 rounded">
-                  {PROPERTY_TYPE_LABELS[property.type as keyof typeof PROPERTY_TYPE_LABELS]}
+                <span className={`text-xs text-white font-bold px-2 py-1 rounded-md ${typeBg}`}>
+                  {typeLabels[property.type] ?? property.type}
                 </span>
                 <span className="font-mono text-xs bg-primary/10 text-primary px-2 py-1 rounded font-bold flex items-center gap-1">
                   <Hash size={11} />
                   {property.id}
                 </span>
-
               </div>
+
               <div className="border-t border-b py-2 flex items-end justify-between gap-3">
                 <div>
                   <p className="text-2xl font-bold text-primary">{formatPrice(property.price)} <span className="text-sm font-normal text-muted-foreground">VNĐ</span></p>

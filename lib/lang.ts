@@ -9,6 +9,7 @@ export const lang = {
     biet_thu: 'Biệt thự',
     can_ho_dich_vu: 'Căn hộ dịch vụ',
     chung_cu: 'Chung cư',
+    penthouse: 'Penthouse',
   } as Record<string, string>,
 
   propertyStatuses: {

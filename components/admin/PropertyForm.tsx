@@ -5,13 +5,15 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import imageCompression from 'browser-image-compression'
 import { createClient } from '@/lib/supabase/client'
-import { Property, PropertyImage, PropertyType, PropertyStatus, CityKey, PROPERTY_TYPE_LABELS, PROPERTY_STATUS_LABELS } from '@/lib/types'
+import { Property, PropertyImage, PropertyType, PropertyStatus, CityKey } from '@/lib/types'
 import { CITY_OPTIONS, CITY_LABELS, DISTRICTS } from '@/lib/locations'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { lang } from '@/lib/lang'
+import { revalidateProperties } from '@/lib/actions'
+import { useConfig } from '@/components/ConfigContext'
 import { Loader2, Upload, X, GripVertical } from 'lucide-react'
 import { toast } from 'sonner'
 import {
@@ -96,9 +98,16 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const descRef = useRef<HTMLTextAreaElement>(null)
   const [saving, setSaving] = useState(false)
+  const { types, statuses } = useConfig()
   const [uploading, setUploading] = useState(false)
 
   const [name, setName] = useState(property?.name ?? '')
+  const nameRef = useRef<HTMLTextAreaElement>(null)
+  useEffect(() => {
+    if (!nameRef.current) return
+    nameRef.current.style.height = 'auto'
+    nameRef.current.style.height = nameRef.current.scrollHeight + 'px'
+  }, [name])
   const [type, setType] = useState<PropertyType>(property?.type ?? 'villa')
   const [city, setCity] = useState<CityKey>(property?.city ?? 'ho_chi_minh')
   const [district, setDistrict] = useState(property?.district ?? '')
@@ -293,6 +302,7 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
       setUploading(false)
 
       toast.success(property?.id ? lang.form.successUpdate : lang.form.successCreate)
+      await revalidateProperties()
       router.push('/admin')
       router.refresh()
     } catch (err: any) {
@@ -313,31 +323,24 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
           <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{lang.form.groupGeneral}</h3>
           <div className="space-y-1.5">
             <Label className="text-[10px]">{lang.form.nameLabel} <span className="text-red-500">*</span></Label>
-            <Input className="text-xs md:text-sm" value={name} onChange={(e) => setName(e.target.value)} placeholder={lang.form.namePlaceholder} required />
+            <textarea ref={nameRef} rows={1} className="w-full text-xs md:text-sm rounded-lg border border-input bg-transparent dark:bg-input/30 px-2.5 py-1 outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 transition-colors resize-none overflow-hidden" value={name} onChange={(e) => setName(e.target.value)} placeholder={lang.form.namePlaceholder} required />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label className="text-[10px]">{lang.form.typeLabel}</Label>
               <Select value={type} onValueChange={(v) => setType(v as PropertyType)}>
-                <SelectTrigger className="w-full text-xs md:text-sm">{PROPERTY_TYPE_LABELS[type]}</SelectTrigger>
+                <SelectTrigger className="w-full text-xs md:text-sm">{types.find(t => t.value === type)?.label ?? type}</SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="villa">{lang.propertyTypes.villa}</SelectItem>
-                  <SelectItem value="biet_thu">{lang.propertyTypes.biet_thu}</SelectItem>
-                  <SelectItem value="can_ho_dich_vu">{lang.propertyTypes.can_ho_dich_vu}</SelectItem>
-                  <SelectItem value="chung_cu">{lang.propertyTypes.chung_cu}</SelectItem>
+                  {types.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
               <Label className="text-[10px]">{lang.form.statusLabel}</Label>
               <Select value={status} onValueChange={(v) => setStatus(v as PropertyStatus)}>
-                <SelectTrigger className="w-full text-xs md:text-sm">{PROPERTY_STATUS_LABELS[status]}</SelectTrigger>
+                <SelectTrigger className="w-full text-xs md:text-sm">{statuses.find(s => s.value === status)?.label ?? status}</SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="selling">{lang.propertyStatuses.selling}</SelectItem>
-                  <SelectItem value="renting">{lang.propertyStatuses.renting}</SelectItem>
-                  <SelectItem value="sold">{lang.propertyStatuses.sold}</SelectItem>
-                  <SelectItem value="rented">{lang.propertyStatuses.rented}</SelectItem>
-                  <SelectItem value="vacant">{lang.propertyStatuses.vacant}</SelectItem>
+                  {statuses.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -386,7 +389,7 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
         {/* Nhóm 3: Thông số & giá */}
         <div className="space-y-3 pt-4 border-t border-border">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{lang.form.groupSpecs}</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label className="text-[10px]">{lang.form.priceLabel}</Label>
               <Input className="text-xs md:text-sm" type="number" value={price} onChange={(e) => setPrice(e.target.value)} placeholder={lang.form.pricePlaceholder} />
@@ -395,6 +398,8 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
               <Label className="text-[10px]">{lang.form.priceUsdLabel}</Label>
               <Input className="text-xs md:text-sm" type="number" value={priceUsd} onChange={(e) => setPriceUsd(e.target.value)} placeholder={lang.form.priceUsdPlaceholder} />
             </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label className="text-[10px]">{lang.form.areaSqmLabel}</Label>
               <Input className="text-xs md:text-sm" type="number" value={areaSqm} onChange={(e) => setAreaSqm(e.target.value)} placeholder={lang.form.areaSqmPlaceholder} />

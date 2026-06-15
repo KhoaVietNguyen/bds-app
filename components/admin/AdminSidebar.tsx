@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Building2, LayoutDashboard, Plus, LogOut, Menu, X, UserRound } from 'lucide-react'
+import { Building2, LayoutDashboard, Plus, LogOut, Menu, X, UserRound, Settings2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { lang } from '@/lib/lang'
@@ -15,6 +15,7 @@ const navItems = [
   { href: '/admin', label: lang.admin.navList, icon: LayoutDashboard },
   { href: '/admin/new', label: lang.admin.navAdd, icon: Plus },
   { href: '/admin/profile', label: lang.admin.navProfile, icon: UserRound },
+  { href: '/admin/config', label: 'Cấu hình', icon: Settings2 },
 ]
 
 export default function AdminSidebar({ userEmail }: { userEmail: string }) {

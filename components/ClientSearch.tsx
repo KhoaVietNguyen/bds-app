@@ -1,14 +1,15 @@
 'use client'
 
-import { useState, useCallback, useEffect, useTransition } from 'react'
+import { useState, useCallback, useEffect, useTransition, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { lang } from '@/lib/lang'
 import { CITY_OPTIONS, CITY_LABELS, DISTRICTS, CityKey } from '@/lib/locations'
-import { PropertyStatus } from '@/lib/types'
+import type { ConfigItem } from '@/lib/config'
 import { Search, X, SlidersHorizontal, Loader2 } from 'lucide-react'
+import PriceRangeSlider from '@/components/PriceRangeSlider'
 
 export default function ClientSearch({
   initialQ,
@@ -17,6 +18,11 @@ export default function ClientSearch({
   initialType,
   initialStatus,
   initialDays,
+  initialPmin,
+  initialPmax,
+  initialCur,
+  types = [],
+  statuses = [],
 }: {
   initialQ?: string
   initialCity?: string
@@ -24,28 +30,48 @@ export default function ClientSearch({
   initialType?: string
   initialStatus?: string
   initialDays?: string
+  initialPmin?: string
+  initialPmax?: string
+  initialCur?: string
+  types?: ConfigItem[]
+  statuses?: ConfigItem[]
 }) {
   const router = useRouter()
+  const typeLabels = Object.fromEntries(types.map(t => [t.value, t.label]))
+  const statusLabels = Object.fromEntries(statuses.map(s => [s.value, s.label]))
   const [q, setQ] = useState(initialQ ?? '')
   const [city, setCity] = useState(initialCity ?? '')
   const [district, setDistrict] = useState(initialDistrict ?? '')
   const [type, setType] = useState(initialType ?? '')
   const [status, setStatus] = useState(initialStatus ?? '')
   const [days, setDays] = useState(initialDays ?? '')
+  const [pmin, setPmin] = useState(initialPmin ?? '')
+  const [pmax, setPmax] = useState(initialPmax ?? '')
+  const [cur, setCur] = useState<'vnd' | 'usd'>(initialCur === 'usd' ? 'usd' : 'vnd')
+  const [sliderMax, setSliderMax] = useState<number | null>(() => {
+    if (initialPmax) return parseFloat(initialPmax) || null
+    if (initialPmin) return parseFloat(initialPmin) * 2 || null
+    return null
+  })
   const [showFilters, setShowFilters] = useState(false)
 
+  const scrollAnchorRef = useRef(0)
   // Đang mở panel filter mà scroll thật sự (quá 24px) thì tự đóng
   useEffect(() => {
     if (!showFilters) return
-    const startY = window.scrollY
+    scrollAnchorRef.current = window.scrollY
     const onScroll = () => {
-      if (Math.abs(window.scrollY - startY) > 24) setShowFilters(false)
+      if (Math.abs(window.scrollY - scrollAnchorRef.current) > 24) setShowFilters(false)
     }
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [showFilters])
+  // Re-anchor sau khi panel mở rộng (slider xuất hiện làm trang bị đẩy)
+  useEffect(() => {
+    if (showFilters) scrollAnchorRef.current = window.scrollY
+  }, [sliderMax])
 
-  const activeFilterCount = [city, district, type, status, days].filter(v => v && v !== 'all').length
+  const activeFilterCount = [city, district, type, status, days, pmin, pmax].filter(v => v && v !== 'all').length + (sliderMax ? 1 : 0)
 
   const [isPending, startTransition] = useTransition()
 
@@ -57,12 +83,17 @@ export default function ClientSearch({
     if (type && type !== 'all') params.set('type', type)
     if (status && status !== 'all') params.set('status', status)
     if (days && days !== 'all') params.set('days', days)
+    const effectivePmax = pmax || (sliderMax ? String(sliderMax) : '')
+    if (pmin) params.set('pmin', pmin)
+    if (effectivePmax) params.set('pmax', effectivePmax)
+    if ((pmin || effectivePmax) && cur === 'usd') params.set('cur', 'usd')
     startTransition(() => router.push(`/?${params.toString()}`))
     setShowFilters(false)
-  }, [q, city, district, type, days, router])
+  }, [q, city, district, type, days, pmin, pmax, cur, sliderMax, router])
 
   const clear = () => {
     setQ(''); setCity(''); setDistrict(''); setType(''); setStatus(''); setDays('')
+    setPmin(''); setPmax(''); setCur('vnd'); setSliderMax(null)
     startTransition(() => router.push('/'))
     setShowFilters(false)
   }
@@ -102,14 +133,11 @@ export default function ClientSearch({
   const typeSelect = (
     <Select value={type || 'all'} onValueChange={(v) => setType(v === 'all' ? '' : (v ?? ''))}>
       <SelectTrigger className="bg-card/60 backdrop-blur border-border w-full h-8 text-xs md:h-9 md:text-sm">
-        {type && type !== 'all' ? ({ villa: lang.propertyTypes.villa, biet_thu: lang.propertyTypes.biet_thu, can_ho_dich_vu: lang.propertyTypes.can_ho_dich_vu, chung_cu: lang.propertyTypes.chung_cu } as Record<string,string>)[type] : 'Tất cả'}
+        {type && type !== 'all' ? (typeLabels[type] ?? type) : 'Tất cả'}
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="all">Tất cả</SelectItem>
-        <SelectItem value="villa">{lang.propertyTypes.villa}</SelectItem>
-        <SelectItem value="biet_thu">{lang.propertyTypes.biet_thu}</SelectItem>
-        <SelectItem value="can_ho_dich_vu">{lang.propertyTypes.can_ho_dich_vu}</SelectItem>
-        <SelectItem value="chung_cu">{lang.propertyTypes.chung_cu}</SelectItem>
+        {types.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
       </SelectContent>
     </Select>
   )
@@ -117,15 +145,11 @@ export default function ClientSearch({
   const statusSelect = (
     <Select value={status || 'all'} onValueChange={(v) => setStatus(v === 'all' ? '' : (v ?? ''))}>
       <SelectTrigger className="bg-card/60 backdrop-blur border-border w-full h-8 text-xs md:h-9 md:text-sm">
-        {status && status !== 'all' ? lang.propertyStatuses[status as PropertyStatus] : lang.search.statusAll}
+        {status && status !== 'all' ? (statusLabels[status] ?? status) : lang.search.statusAll}
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="all">{lang.search.statusAll}</SelectItem>
-        <SelectItem value="selling">{lang.propertyStatuses.selling}</SelectItem>
-        <SelectItem value="renting">{lang.propertyStatuses.renting}</SelectItem>
-        <SelectItem value="sold">{lang.propertyStatuses.sold}</SelectItem>
-        <SelectItem value="rented">{lang.propertyStatuses.rented}</SelectItem>
-        <SelectItem value="vacant">{lang.propertyStatuses.vacant}</SelectItem>
+        {statuses.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
       </SelectContent>
     </Select>
   )
@@ -143,6 +167,13 @@ export default function ClientSearch({
         <SelectItem value="180">{lang.search.date180}</SelectItem>
       </SelectContent>
     </Select>
+  )
+
+  const priceFilter = (
+    <PriceRangeSlider
+      pmin={pmin} pmax={pmax} cur={cur} sliderMax={sliderMax}
+      onPminChange={setPmin} onPmaxChange={setPmax} onCurChange={setCur} onSliderMaxChange={setSliderMax}
+    />
   )
 
   const label = (text: string) => (
@@ -197,13 +228,17 @@ export default function ClientSearch({
         )}
       </div>
 
-      {/* Desktop: filters in one row */}
+      {/* Desktop: filters row 1 */}
       <div className="hidden md:flex gap-2 items-end mt-3">
         <div className="flex flex-col gap-0.5 flex-1 min-w-0">{label(lang.search.cityLabel)}{citySelect}</div>
         <div className="flex flex-col gap-0.5 flex-1 min-w-0">{label(lang.search.districtLabel)}{districtSelect}</div>
         <div className="flex flex-col gap-0.5 flex-1 min-w-0">{label(lang.search.typeLabel)}{typeSelect}</div>
         <div className="flex flex-col gap-0.5 flex-1 min-w-0">{label(lang.search.statusLabel)}{statusSelect}</div>
         <div className="flex flex-col gap-0.5 flex-1 min-w-0">{label(lang.search.dateLabel)}{daysSelect}</div>
+      </div>
+      {/* Desktop: filter row 2 - price */}
+      <div className="hidden md:flex mt-2">
+        {priceFilter}
       </div>
 
       {/* Mobile: collapsible filter panel */}
@@ -216,6 +251,7 @@ export default function ClientSearch({
             <div className="flex flex-col gap-0.5">{label(lang.search.statusLabel)}{statusSelect}</div>
             <div className="flex flex-col gap-0.5 col-span-2">{label(lang.search.dateLabel)}{daysSelect}</div>
           </div>
+          {priceFilter}
           <div className="flex gap-2">
             <Button onClick={search} disabled={isPending} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white h-8">
               {isPending ? <Loader2 size={14} className="mr-1.5 animate-spin" /> : <Search size={14} className="mr-1.5" />}

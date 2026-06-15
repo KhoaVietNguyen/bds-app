@@ -1,4 +1,3 @@
-import { createClient } from '@/lib/supabase/server'
 import Image from 'next/image'
 import PropertyCard from '@/components/PropertyCard'
 import ClientSearch from '@/components/ClientSearch'
@@ -6,46 +5,36 @@ import ThemeToggle from '@/components/ThemeToggle'
 import { lang } from '@/lib/lang'
 import { Building2, Phone } from 'lucide-react'
 import { ZaloIcon } from '@/components/AgentCard'
+import { toLabelsMap } from '@/lib/config'
+import { getProperties, getProfile, getPropertyTypes, getPropertyStatuses } from '@/lib/data'
 
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; city?: string; district?: string; type?: string; status?: string; days?: string }>
+  searchParams: Promise<{ q?: string; city?: string; district?: string; type?: string; status?: string; days?: string; pmin?: string; pmax?: string; cur?: string }>
 }) {
   const params = await searchParams
-  const supabase = await createClient()
 
-  let query = supabase
-    .from('properties')
-    .select('*, property_images(id, url, order_index)')
-    .order('created_at', { ascending: false })
+  // Compute `since` outside cache scope so Date.now() isn't frozen in cache
+  const since = params.days
+    ? new Date(Math.floor((Date.now() - parseInt(params.days) * 86_400_000) / 60000) * 60000).toISOString()
+    : undefined
 
-  if (params.q) {
-    query = query.or(`id.ilike.%${params.q}%,name.ilike.%${params.q}%`)
-  }
-  if (params.city) {
-    query = query.eq('city', params.city)
-  }
-  if (params.district) {
-    query = query.eq('district', params.district)
-  }
-  if (params.type) {
-    query = query.eq('type', params.type)
-  }
-  if (params.status) {
-    query = query.eq('status', params.status)
-  }
-  if (params.days) {
-    const since = new Date(Date.now() - parseInt(params.days) * 86_400_000).toISOString()
-    query = query.gte('created_at', since)
-  }
+  const cur = params.cur === 'usd' ? 'usd' : 'vnd'
+  const pmin = params.pmin ? parseFloat(params.pmin) : undefined
+  const pmax = params.pmax ? parseFloat(params.pmax) : undefined
+  const priceMin = pmin != null ? (cur === 'vnd' ? pmin * 1_000_000_000 : pmin * 1_000) : undefined
+  const priceMax = pmax != null ? (cur === 'vnd' ? pmax * 1_000_000_000 : pmax * 1_000) : undefined
 
-  const [{ data: properties }, { data: profile }] = await Promise.all([
-    query,
-    supabase.from('profile').select('*').eq('id', 1).single(),
+  const [properties, profile, propertyTypes, propertyStatuses] = await Promise.all([
+    getProperties({ q: params.q, city: params.city, district: params.district, type: params.type, status: params.status, since, priceMin, priceMax, priceCurrency: cur }),
+    getProfile(),
+    getPropertyTypes(),
+    getPropertyStatuses(),
   ])
+  const typeLabels = toLabelsMap(propertyTypes)
 
-  const hasFilters = params.q || params.city || params.district || params.type || params.status || params.days
+  const hasFilters = params.q || params.city || params.district || params.type || params.status || params.days || params.pmin || params.pmax
 
   return (
     <div className="min-h-screen bg-background">
@@ -101,6 +90,11 @@ export default async function HomePage({
               initialType={params.type}
               initialStatus={params.status}
               initialDays={params.days}
+              initialPmin={params.pmin}
+              initialPmax={params.pmax}
+              initialCur={params.cur}
+              types={propertyTypes}
+              statuses={propertyStatuses}
             />
           </div>
         </div>
@@ -114,6 +108,11 @@ export default async function HomePage({
           initialDistrict={params.district}
           initialType={params.type}
           initialDays={params.days}
+          initialPmin={params.pmin}
+          initialPmax={params.pmax}
+          initialCur={params.cur}
+          types={propertyTypes}
+          statuses={propertyStatuses}
         />
       </div>
 
@@ -129,7 +128,7 @@ export default async function HomePage({
         {properties && properties.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
             {properties.map((property) => (
-              <PropertyCard key={property.id} property={property as any} profile={profile} />
+              <PropertyCard key={property.id} property={property as any} profile={profile} typeLabels={typeLabels} statuses={propertyStatuses} types={propertyTypes} />
             ))}
           </div>
         ) : (

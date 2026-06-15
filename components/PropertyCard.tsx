@@ -1,20 +1,31 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { Property, Profile, PROPERTY_TYPE_LABELS, PROPERTY_STATUS_LABELS } from '@/lib/types'
+import { Property, Profile } from '@/lib/types'
 import { lang } from '@/lib/lang'
 import { formatPrice, formatPriceUsd } from '@/lib/format'
 import { formatLocation } from '@/lib/locations'
+import type { ConfigItem } from '@/lib/config'
+import { getStatusBadgeSolid } from '@/lib/config'
 import { MapPin, BedDouble, Maximize2, Images, Phone, UserRound } from 'lucide-react'
 
-const STATUS_COLORS = {
-  selling: 'bg-green-500/80 text-white dark:text-white',
-  renting: 'bg-blue-500/80 text-white dark:text-white',
-  sold: 'bg-red-500/80 text-white dark:text-white',
-  rented: 'bg-orange-500/80 text-white dark:text-white',
-  vacant: 'bg-purple-500/80 text-white dark:text-white',
-}
-
-export default function PropertyCard({ property, profile }: { property: Property; profile?: Profile | null }) {
+export default function PropertyCard({
+  property,
+  profile,
+  typeLabels = {},
+  statuses = [],
+  types = [],
+}: {
+  property: Property
+  profile?: Profile | null
+  typeLabels?: Record<string, string>
+  statuses?: ConfigItem[]
+  types?: ConfigItem[]
+}) {
+  const statusItem = statuses.find(s => s.value === property.status)
+  const statusLabel = statusItem?.label ?? property.status
+  const statusBadgeClass = getStatusBadgeSolid(statusItem?.color)
+  const typeItem = types.find(t => t.value === property.type)
+  const typeBadgeClass = getStatusBadgeSolid(typeItem?.color)
   const images = property.property_images?.sort((a, b) => a.order_index - b.order_index) ?? []
   const cover = images[0]?.url
 
@@ -38,8 +49,8 @@ export default function PropertyCard({ property, profile }: { property: Property
           )}
           {/* Status badge */}
           <div className="absolute top-3 left-3 flex gap-2">
-            <span className={`${STATUS_COLORS[property.status]} text-sm px-2 py-0.5 rounded-md font-bold`}>
-              {PROPERTY_STATUS_LABELS[property.status]}
+            <span className={`text-white text-sm px-2 py-0.5 rounded-md font-bold ${statusBadgeClass}`}>
+              {statusLabel}
             </span>
           </div>
           {/* Image count */}
@@ -50,8 +61,8 @@ export default function PropertyCard({ property, profile }: { property: Property
             </div>
           )}
           {/* Type badge */}
-          <div className="absolute top-3 right-3 bg-card/90 bg-orange-400/90 text-white text-sm px-2 py-0.5 rounded-md font-bold">
-            {PROPERTY_TYPE_LABELS[property.type]}
+          <div className={`absolute top-3 right-3 text-white text-sm px-2 py-0.5 rounded-md font-bold ${typeBadgeClass}`}>
+            {typeLabels[property.type] ?? property.type}
           </div>
         </div>
 
@@ -84,10 +95,19 @@ export default function PropertyCard({ property, profile }: { property: Property
 
           <div className="mt-3 pt-3 border-t border-border flex items-center justify-between gap-2">
             <div>
-              <p className="text-base font-bold text-orange-500">{formatPrice(property.price)}</p>
-              {property.price_usd && (
-                <p className="text-xs text-muted-foreground">{formatPriceUsd(property.price_usd)}</p>
-              )}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {property.price && (
+                  <span className="inline-flex items-center text-base font-bold text-orange-500 bg-orange-500/10 px-1.5 py-0.5 rounded">{formatPrice(property.price)}</span>
+                )}
+                {property.price_usd && (
+                  <span className="inline-flex items-center text-base font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                    {formatPriceUsd(property.price_usd)}
+                  </span>
+                )}
+                {!property.price && !property.price_usd && (
+                  <span className="inline-flex items-center text-base font-bold text-orange-500 bg-orange-500/10 px-1.5 py-0.5 rounded">Liên hệ</span>
+                )}
+              </div>
             </div>
             {profile && (profile.avatar_url || profile.phone) && (
               <div className="flex items-center gap-1.5 min-w-0">

@@ -5,7 +5,7 @@ import { lang } from '@/lib/lang'
 export default async function AdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; city?: string; district?: string; type?: string; status?: string; days?: string }>
+  searchParams: Promise<{ q?: string; city?: string; district?: string; type?: string; status?: string; days?: string; pmin?: string; pmax?: string; cur?: string }>
 }) {
   const params = await searchParams
   const supabase = await createClient()
@@ -33,6 +33,15 @@ export default async function AdminPage({
   if (params.days) {
     const since = new Date(Date.now() - parseInt(params.days) * 86_400_000).toISOString()
     query = query.gte('created_at', since)
+  }
+  const cur = params.cur === 'usd' ? 'usd' : 'vnd'
+  if (params.pmin) {
+    const val = parseFloat(params.pmin) * (cur === 'vnd' ? 1_000_000_000 : 1_000)
+    query = query.gte(cur === 'usd' ? 'price_usd' : 'price', val)
+  }
+  if (params.pmax) {
+    const val = parseFloat(params.pmax) * (cur === 'vnd' ? 1_000_000_000 : 1_000)
+    query = query.lte(cur === 'usd' ? 'price_usd' : 'price', val)
   }
 
   const { data: properties } = await query
