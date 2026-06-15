@@ -35,7 +35,7 @@ export default function ImageGallery({ images }: { images: PropertyImage[] }) {
 
   if (sorted.length === 0) {
     return (
-      <div className="aspect-video bg-slate-100 rounded-2xl flex items-center justify-center text-slate-300">
+      <div className="aspect-video bg-slate-100 rounded-lg flex items-center justify-center text-slate-300">
         Chưa có ảnh
       </div>
     )
@@ -44,7 +44,7 @@ export default function ImageGallery({ images }: { images: PropertyImage[] }) {
   return (
     <>
       {/* Main carousel */}
-      <div className="relative overflow-hidden rounded-2xl" ref={emblaRef}>
+      <div className="relative overflow-hidden rounded-lg" ref={emblaRef}>
         <div className="flex touch-pan-y">
           {sorted.map((img, i) => (
             <div key={img.id} className="flex-[0_0_100%] min-w-0 relative aspect-video bg-slate-100">
