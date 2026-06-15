@@ -16,6 +16,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <ConfigContextProvider types={types} statuses={statuses}>
+      {/* Set nền body theo màu admin NGAY trong lúc parse (body đã tồn tại ở
+          đây), trước first paint → hết race khiến light mode lúc trắng lúc cam.
+          iOS lấy màu safe area từ nền body. */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `try{var d=document.documentElement.classList.contains('dark');var c=d?'#09090b':'#fdba74';document.body.style.backgroundColor=c;var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',c)}catch(e){}`,
+        }}
+      />
       <div className="min-h-screen bg-orange-300 dark:bg-zinc-950">
         {/* Dải sticky cao bằng vùng notch — repaint khi đổi theme để iOS
             re-sample màu safe area (giống cơ chế header sticky bên client) */}
