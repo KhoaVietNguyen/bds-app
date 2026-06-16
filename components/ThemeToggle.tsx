@@ -23,6 +23,14 @@ function applyThemeColor(color: string) {
   document.head.appendChild(meta)
 }
 
+// iOS Safari không vẽ lại màu safe area khi đổi theme-color động (chỉ ăn sau
+// khi kill app). Nhúc trang 1px rồi trả lại buộc nó re-sample ngay lập tức.
+function nudgeSafeArea() {
+  const y = window.scrollY
+  window.scrollTo(0, y + 1)
+  requestAnimationFrame(() => window.scrollTo(0, y))
+}
+
 export default function ThemeToggle() {
   const [isDark, setIsDark] = useState(true)
 
@@ -40,6 +48,7 @@ export default function ThemeToggle() {
     document.documentElement.classList.toggle('dark', next)
     localStorage.setItem('theme', next ? 'dark' : 'light')
     applyThemeColor(getThemeColor(next))
+    nudgeSafeArea()
   }
 
   return (
