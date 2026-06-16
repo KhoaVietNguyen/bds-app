@@ -24,16 +24,16 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           __html: `try{var d=document.documentElement.classList.contains('dark');var c=d?'#09090b':'#fdba74';document.body.style.backgroundColor=c;var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',c)}catch(e){}`,
         }}
       />
-      <div className="min-h-screen bg-orange-300 dark:bg-zinc-950">
-        {/* Dải sticky cao bằng vùng notch — repaint khi đổi theme để iOS
-            re-sample màu safe area (giống cơ chế header sticky bên client) */}
-        <div className="sticky top-0 z-40 h-[env(safe-area-inset-top)] bg-orange-300 dark:bg-zinc-950" />
-        <div className="flex">
+      <div className="min-h-screen flex relative isolate bg-orange-300 dark:bg-zinc-950">
+        {/* Gradient nền — góc trên-trái là orange-300/zinc-950 trùng màu body
+            nên vùng safe area (lấy màu từ body) liền mạch với gradient */}
+        <div className="fixed inset-0 z-0 pointer-events-none bg-linear-to-br from-orange-300 via-orange-100 to-amber-200 dark:from-zinc-950 dark:via-orange-950/60 dark:to-black" />
+        <div className="relative z-30">
           <AdminSidebar userEmail={session.user.email ?? ''} />
-          <main className="flex-1 min-w-0 p-4 pb-24 md:p-6 lg:p-8">
-            {children}
-          </main>
         </div>
+        <main className="relative z-10 flex-1 min-w-0 p-4 pb-24 md:p-6 lg:p-8">
+          {children}
+        </main>
       </div>
     </ConfigContextProvider>
   )
