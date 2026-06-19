@@ -25,7 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="theme-color" content="#171717" suppressHydrationWarning />
         <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('theme');var d=t?t==='dark':false;document.documentElement.classList.toggle('dark',d);var a=location.pathname.startsWith('/admin');var c=d?(a?'#09090b':'#171717'):(a?'#fdba74':'#ffffff');document.documentElement.style.backgroundColor=c;var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',c)}catch(e){}` }} />
       </head>
-      <body className="min-h-full flex flex-col bg-background [--border:oklch(0_0_0/20%)] [--input:oklch(0_0_0/20%)] dark:[--border:oklch(0.269_0_0)] dark:[--input:oklch(1_0_0/15%)]">
+      <body suppressHydrationWarning className="min-h-full flex flex-col bg-background [--border:oklch(0_0_0/20%)] [--input:oklch(0_0_0/20%)] dark:[--border:oklch(0.269_0_0)] dark:[--input:oklch(1_0_0/15%)]">
         {children}
         <Toaster richColors position="top-center" />
       </body>

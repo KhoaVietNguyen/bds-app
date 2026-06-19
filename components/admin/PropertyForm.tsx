@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import imageCompression from 'browser-image-compression'
 import { createClient } from '@/lib/supabase/client'
@@ -12,7 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { lang } from '@/lib/lang'
-import { revalidateProperties } from '@/lib/actions'
+import { revalidateAndRedirect } from '@/lib/actions'
 import { useConfig } from '@/components/ConfigContext'
 import { STATUS_BADGE_BG } from '@/lib/config'
 
@@ -103,7 +102,6 @@ interface Props {
 }
 
 export default function PropertyForm({ property, existingImages = [] }: Props) {
-  const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const descRef = useRef<HTMLTextAreaElement>(null)
   const [saving, setSaving] = useState(false)
@@ -317,10 +315,10 @@ export default function PropertyForm({ property, existingImages = [] }: Props) {
       setUploading(false)
 
       toast.success(property?.id ? lang.form.successUpdate : lang.form.successCreate)
-      await revalidateProperties()
-      router.push('/admin')
-      router.refresh()
+      setSaving(false)
+      await revalidateAndRedirect('/admin')
     } catch (err: any) {
+      if (err?.digest?.startsWith('NEXT_REDIRECT')) throw err
       toast.error(lang.form.errorPrefix + ' ' + (err.message ?? 'Không xác định'))
       setSaving(false)
       setUploading(false)
